@@ -308,8 +308,6 @@ static int cd_builtin(str_list_t args){
     //</>
  
 
-
-static int await_current_child(void){
     int get_child_return_value(int stat_loc){
         if(WIFEXITED(stat_loc))
             return WEXITSTATUS(stat_loc);
@@ -326,7 +324,9 @@ static int await_current_child(void){
             return sigterm + RET_VAL_OFFSET_WHEN_KILLED_BY_SIGNAL;
         }
         err(ENOTSUP, "Process terminated in unsupported way.\n");
-    }   
+    }
+
+static int await_current_child(void){   
 
     if(current_child_pid <= 0)
         return shell_ret_val;
