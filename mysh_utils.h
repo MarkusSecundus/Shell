@@ -49,7 +49,7 @@ typedef struct{
 } string_t;
 
 //converts char[] literal to string_t literal
-#define as_string(lit) ((string_t){.str = (lit), .len = (sizeof(lit) - 1)})
+#define as_string(lit) ( (string_t){.str = (lit), .len = (sizeof(lit) - 1)} )
 
 
 
