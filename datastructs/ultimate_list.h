@@ -11,7 +11,9 @@
     XORovaný spoják, který jsem si původně napsal jako pomůcku k úkolu z Operačních systémů.
 */
 
+
 typedef int xll_length_t;
+
 
 /**
  * Header of a generic xor_linked_list node - to be embedded inside a node struct.
