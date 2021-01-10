@@ -1,55 +1,59 @@
 
 
-#include<stdlib.h>
-#include<unistd.h>
-#include<signal.h>
-#include<errno.h>
-#include<err.h>
-#include<pwd.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <signal.h>
+#include <errno.h>
+#include <err.h>
+#include <pwd.h>
 
-#include<sys/types.h>
-#include<sys/wait.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/types.h>
 
-#include<readline/readline.h>
-#include<readline/history.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 
 #include "mysh_utils.h"
 
 #include "syntax_analyzer.tab.h"
 
 
+
 //<global variables>
 static command_list_t parser_ret_val;
 static int shell_ret_val;
 
-void set_parser_ret_val(command_list_t value){
+void set_parser_ret_val(command_list_t value)
+{
     parser_ret_val = value;
 }
 
-int set_shell_ret_val(int value){
+int set_shell_ret_val(int value)
+{
     return shell_ret_val = value;
 }
 
-
-int* line_count(void){
+int *line_count(void)
+{
     static int value = 0;
     return &value;
 }
-char** current_token(void){
+char **current_token(void)
+{
     static char *value = "(nil)";
     return &value;
 }
 
-
-
 static int is_interactive_mode_flag = 0;
 static int is_filereading_mode_flag = 0;
 
-int is_interactive_mode(void){
+int is_interactive_mode(void)
+{
     return is_interactive_mode_flag;
 }
-int is_filereading_mode(void){
+int is_filereading_mode(void)
+{
     return is_filereading_mode_flag;
 }
 
@@ -57,19 +61,25 @@ int is_filereading_mode(void){
 
 
 
+
+
 //<error-handled memory allocation>
-void* alloc_memory(size_t size){
+void *alloc_memory(size_t size)
+{
     void *ret = malloc(size);
-    if(!ret){
+    if (!ret)
+    {
         err(ENOMEM, "Unable to allocate %ld bytes - exiting!\n", size);
         _Exit(ENOMEM);
     }
     return ret;
 }
 
-void* realloc_memory(void *to_realloc, size_t new_size){
+void *realloc_memory(void *to_realloc, size_t new_size)
+{
     void *ret = realloc(to_realloc, new_size);
-    if(!ret){
+    if (!ret)
+    {
         err(ENOMEM, "Unable to realloc %p to %ld bytes - exiting!\n", to_realloc, new_size);
         _Exit(ENOMEM);
     }
@@ -81,60 +91,74 @@ void* realloc_memory(void *to_realloc, size_t new_size){
 
 
 
+
 //<strings>
-string_t str_copy(const char *to_copy){
+string_t str_copy(const char *to_copy)
+{
     int len = strlen(to_copy);
-    string_t ret = {.len = len, .str=(char*)alloc_memory(sizeof(char)*(len+1))};
-    memcpy(ret.str, to_copy, len+1);
+    string_t ret = {.len = len, .str = (char *)alloc_memory(sizeof(char) * (len + 1))};
+    memcpy(ret.str, to_copy, len + 1);
     return ret;
 }
 
-static string_t raw_to_string(char *raw){
-    return (string_t){.len=strlen(raw), .str = raw};
+static string_t raw_to_string(char *raw)
+{
+    return (string_t){.len = strlen(raw), .str = raw};
 }
 
-
-static string_t str_cpy(string_t to_copy){
+static string_t str_cpy(string_t to_copy)
+{
     int len = to_copy.len;
-    string_t ret = {.len = len, .str=(char*)alloc_memory(sizeof(char)*(len+1))};
-    memcpy(ret.str, to_copy.str, len+1);
+    string_t ret = {.len = len, .str = (char *)alloc_memory(sizeof(char) * (len + 1))};
+    memcpy(ret.str, to_copy.str, len + 1);
     return ret;
 }
 
-static int str_equals(string_t a, string_t b){
+static int str_equals(string_t a, string_t b)
+{
     return a.len == b.len && !strcmp(a.str, b.str);
 }
 
-static string_t str_concat(string_t a, string_t b){
+static string_t str_concat(string_t a, string_t b)
+{
     int len = a.len + b.len;
-    char *ret = (char*)alloc_memory((len+1)*sizeof(char));
+    char *ret = (char *)alloc_memory((len + 1) * sizeof(char));
     memcpy(ret, a.str, a.len);
-    memcpy(ret+a.len, b.str, b.len);
+    memcpy(ret + a.len, b.str, b.len);
     ret[len] = '\0';
-    return (string_t){.len=len, .str=ret};
+    return (string_t){.len = len, .str = ret};
 }
-static string_t str_chr_str_concat(string_t a,char c, string_t b){
-    int len = a.len +1 + b.len;
-    char *ret = (char*)alloc_memory((len+1)*sizeof(char));
+static string_t str_chr_str_concat(string_t a, char c, string_t b)
+{
+    int len = a.len + 1 + b.len;
+    char *ret = (char *)alloc_memory((len + 1) * sizeof(char));
     memcpy(ret, a.str, a.len);
     ret[a.len] = c;
-    memcpy(ret+a.len + 1, b.str, b.len);
+    memcpy(ret + a.len + 1, b.str, b.len);
     ret[len] = '\0';
-    return (string_t){.len=len, .str=ret};
+    return (string_t){.len = len, .str = ret};
 }
 
-
-string_buffer_t make_string_buffer(int len){
-    if(len < 16) len = 16;
-    char *s = (char*)alloc_memory(len*sizeof(char));
+string_buffer_t make_string_buffer(int len)
+{
+    if (len < 16)
+        len = 16;
+    char *s = (char *)alloc_memory(len * sizeof(char));
     *s = '\0';
-    return (string_buffer_t){.str=(string_t){.str=s, .len=0}, .buffer_len=len};
+    return (string_buffer_t){.str = (string_t){.str = s, .len = 0}, .buffer_len = len};
 }
 
-void append_char_to_buffer(string_buffer_t *buf, char c){
-    if(buf->str.len >= buf->buffer_len - 2){
-        buf->buffer_len += 32;
-        buf->str.str = (char*)realloc_memory(buf->str.str, buf->buffer_len);
+void grow_buffer(string_buffer_t *buf, size_t len)
+{
+    buf->buffer_len += len;
+    buf->str.str = (char *)realloc_memory(buf->str.str, buf->buffer_len);
+}
+
+void append_char_to_buffer(string_buffer_t *buf, char c)
+{
+    if (buf->str.len >= buf->buffer_len - 2)
+    {
+        grow_buffer(buf, 32);
     }
     buf->str.str[buf->str.len++] = c;
     buf->str.str[buf->str.len] = '\0';
@@ -144,38 +168,49 @@ void append_char_to_buffer(string_buffer_t *buf, char c){
 
 
 
+
+
+
+
+
 //<structures for representing commands in memory>
 
-command_t make_command(string_t command_name){
+command_t make_command(string_t command_name)
+{
     return (command_t){.command_name = command_name, .args_list = xll_empty(str_list_t)};
 }
 
-command_t append_arg_to_command(command_t self, string_t arg){
-    self.args_list = xll_add(self.args_list, {.str=arg});
+command_t append_arg_to_command(command_t self, string_t arg)
+{
+    self.args_list = xll_add(self.args_list, {.str = arg});
     return self;
 }
 
-
-void destroy_command(command_t com){
+void destroy_command(command_t com)
+{
     free(com.command_name.str);
     str_list_t list = com.args_list;
-    while(list.length>0){
+    while (list.length > 0)
+    {
         free(list.current->str.str);
         list = xll_destroy(list);
     }
 }
 
-command_list_t make_command_list(command_t first){
+command_list_t make_command_list(command_t first)
+{
     return xll_create(command_list_node_t, {.command = first});
 }
 
-command_list_t append_to_command_list(command_list_t list, command_t to_append){
+command_list_t append_to_command_list(command_list_t list, command_t to_append)
+{
     return xll_add(list, {.command = to_append});
 }
 
-
-command_list_t destroy_command_list(command_list_t list){
-    while(list.length > 0){
+command_list_t destroy_command_list(command_list_t list)
+{
+    while (list.length > 0)
+    {
         destroy_command(list.current->command);
         list = xll_destroy(list);
     }
@@ -188,28 +223,45 @@ command_list_t destroy_command_list(command_list_t list){
 
 
 
-
-
 //<manipulation of environment variables>
 
-static string_t get_home_dir(void){
+
+char* get_current_dir(void){
+    char *ret = getcwd(NULL, 0);
+    if(ret)
+        return ret;
+    
+    string_buffer_t buf = make_string_buffer(32);
+    while(!(ret=getcwd(buf.str.str, buf.buffer_len)))
+        grow_buffer(&buf, 32);
+    return ret;
+}
+
+
+
+static string_t get_home_dir(void)
+{
     char *ret = getenv("HOME");
-    if(!ret)
+    if (!ret)
         ret = getpwuid(getuid())->pw_dir;
     return str_copy(ret);
 }
 
-static char* get_pwd(void){
+static char *get_pwd(void)
+{
     return getenv("PWD");
 }
-static char* get_oldpwd(void){
+static char *get_oldpwd(void)
+{
     return getenv("OLDPWD");
 }
 
-static int set_pwd(const char* value){
+static int set_pwd(const char *value)
+{
     return setenv("PWD", value, 1);
 }
-static int set_oldpwd(const char* value){
+static int set_oldpwd(const char *value)
+{
     return setenv("OLDPWD", value, 1);
 }
 
@@ -217,63 +269,78 @@ static int set_oldpwd(const char* value){
 
 
 
-//<handling SIGINT interrupr>
-static void sigint_handler_fnc(int t){
-    (void)t;
-    
-    putchar('\n');
-    if(is_interactive_mode()){
-        rl_replace_line("", 0);
-        if(!rl_already_prompted)
-            rl_redraw_prompt_last_line();
-    }
-}
-static void nop_handler_fnc(int t){
-    (void)t;
-}
-
-const struct sigaction handler_when_idle = (struct sigaction){.sa_handler = sigint_handler_fnc, .sa_flags = SA_RESTART}; 
-const struct sigaction handler_when_child_running = (struct sigaction){.sa_handler = nop_handler_fnc, .sa_flags = SA_RESTART}; 
-
-static void set_sigint_handler(const struct sigaction *handl){
-    if(sigaction(SIGINT, handl, NULL)){
-        err(-1, "Unable to register SIGINT signal handler!");
-        _Exit(-1);
-    }
-}
-
-//</>
 
 
 
 
-
-
+//<executing commands>
 
 
 static pid_t current_child_pid;
 static command_list_t waiting_to_be_executed;
 
-    //<builtin commands>
-static int exit_builtin(void){
+//      <handling SIGINT interrupt>
+static void sigint_handler_fnc(int t)
+{
+    (void)t;
+
+    putchar('\n');
+    if (is_interactive_mode())
+    {
+        rl_replace_line("", 0);
+        if (!rl_already_prompted)
+            rl_redraw_prompt_last_line();
+    }
+}
+static void nop_handler_fnc(int t)
+{
+    (void)t;
+}
+
+const struct sigaction handler_when_idle = (struct sigaction){.sa_handler = sigint_handler_fnc, .sa_flags = SA_RESTART};
+const struct sigaction handler_when_child_running = (struct sigaction){.sa_handler = nop_handler_fnc, .sa_flags = SA_RESTART};
+
+static void set_sigint_handler(const struct sigaction *handl)
+{
+    if (sigaction(SIGINT, handl, NULL))
+    {
+        err(-1, "Unable to register SIGINT signal handler!");
+        _Exit(-1);
+    }
+}
+
+//      </>
+
+
+
+
+
+
+//      <builtin commands>
+static int exit_builtin(void)
+{
     exit(shell_ret_val);
     return shell_ret_val;
 }
 
-static int nop_builtin(void){
+static int nop_builtin(void)
+{
     return 0;
 }
 
-static int cd_builtin(str_list_t args){
+static int cd_builtin(str_list_t args)
+{
     string_t path;
     int reverting_to_oldpwd = 0;
-    switch(args.length){
+    switch (args.length)
+    {
     case 0:
         path = get_home_dir();
         break;
     case 1:
         path = args.current->str;
-        if(str_equals(path, as_string("-"))){
+        if (str_equals(path, as_string("-")))
+        {
             path = raw_to_string(get_oldpwd());
             reverting_to_oldpwd = 1;
         }
@@ -286,16 +353,17 @@ static int cd_builtin(str_list_t args){
 
     string_t new_oldpwd = str_copy(get_pwd());
 
-    if(chdir(path.str)!=0){
-        warn("cd: `%s`",path.str);
+    if (chdir(path.str) != 0)
+    {
+        warn("cd: `%s`", path.str);
         free(path.str);
         free(new_oldpwd.str);
         return ENOENT;
     }
-    if(reverting_to_oldpwd)
+    if (reverting_to_oldpwd)
         printf("%s\n", path.str);
 
-    char *real_curr_pwd = get_current_dir_name();
+    char *real_curr_pwd = get_current_dir();
 
     set_oldpwd(new_oldpwd.str);
     set_pwd(real_curr_pwd);
@@ -305,34 +373,44 @@ static int cd_builtin(str_list_t args){
     free(new_oldpwd.str);
     return 0;
 }
-    //</>
- 
+//      </>
 
-    int get_child_return_value(int stat_loc){
-        if(WIFEXITED(stat_loc))
-            return WEXITSTATUS(stat_loc);
-        if(WIFSIGNALED(stat_loc)){
-            int sigterm = WTERMSIG(stat_loc);
-            if(sigterm == SIGINT) 
-                waiting_to_be_executed = destroy_command_list(waiting_to_be_executed);
-            errprintf("Killed by signal %d.\n", sigterm);
-            return sigterm + RET_VAL_OFFSET_WHEN_KILLED_BY_SIGNAL;
-        }
-        if(WIFSTOPPED(stat_loc)){
-            int sigterm = WSTOPSIG(stat_loc);
-            errprintf("Stopped by signal %d.\n", sigterm);
-            return sigterm + RET_VAL_OFFSET_WHEN_KILLED_BY_SIGNAL;
-        }
-        err(ENOTSUP, "Process terminated in unsupported way.\n");
+
+
+
+
+
+
+int get_child_return_value(int stat_loc)
+{
+    if (WIFEXITED(stat_loc))
+        return WEXITSTATUS(stat_loc);
+    if (WIFSIGNALED(stat_loc))
+    {
+        int sigterm = WTERMSIG(stat_loc);
+        if (sigterm == SIGINT)
+            waiting_to_be_executed = destroy_command_list(waiting_to_be_executed);
+        errprintf("Killed by signal %d.\n", sigterm);
+        return sigterm + RET_VAL_OFFSET_WHEN_KILLED_BY_SIGNAL;
     }
+    if (WIFSTOPPED(stat_loc))
+    {
+        int sigterm = WSTOPSIG(stat_loc);
+        errprintf("Stopped by signal %d.\n", sigterm);
+        return sigterm + RET_VAL_OFFSET_WHEN_KILLED_BY_SIGNAL;
+    }
+    err(ENOTSUP, "Process terminated in unsupported way.\n");
+}
 
-static int await_current_child(void){   
+static int await_current_child(void)
+{
 
-    if(current_child_pid <= 0)
+    if (current_child_pid <= 0)
         return shell_ret_val;
 
     int stat_loc;
-    if(waitpid(current_child_pid, &stat_loc, 0)!=-1){
+    if (waitpid(current_child_pid, &stat_loc, 0) != -1)
+    {
         return get_child_return_value(stat_loc);
     }
 
@@ -341,30 +419,30 @@ static int await_current_child(void){
     return shell_ret_val;
 }
 
+char **make_command_arglist(command_t com)
+{
+    char **ret = (char **)alloc_memory((com.args_list.length + 2) * sizeof(char *));
+    char **it = ret;
+    *it++ = com.command_name.str;
+    xll_foreach(arg, com.args_list)
+        *it++ = arg->str.str;
+    *it = NULL;
+    return ret;
+}
 
-
-
-
-    char **make_command_arglist(command_t com){
-        char **ret = (char**)alloc_memory((com.args_list.length+2)*sizeof(char*));
-        char **it = ret;
-        *it++ = com.command_name.str;
-        xll_foreach(arg, com.args_list)
-            *it++ = arg->str.str;
-        *it = NULL;
-        return ret;
-    }
-    
-    char* make_command_path(string_t partial){
-        if(partial.str[0]==PATH_SEPARATOR || strchr(partial.str, PATH_SEPARATOR) == NULL)
-            return partial.str;
-        return str_chr_str_concat(raw_to_string(get_pwd()), PATH_SEPARATOR, partial).str;
-    }
-static int exec_general_command(command_t com){
+char *make_command_path(string_t partial)
+{
+    if (partial.str[0] == PATH_SEPARATOR || strchr(partial.str, PATH_SEPARATOR) == NULL)
+        return partial.str;
+    return str_chr_str_concat(raw_to_string(get_pwd()), PATH_SEPARATOR, partial).str;
+}
+static int exec_general_command(command_t com)
+{
 
     set_sigint_handler(&handler_when_child_running);
     int id = fork();
-    if(id == 0){
+    if (id == 0)
+    {
         char **arglist = make_command_arglist(com);
         char *command_name = make_command_path(com.command_name);
         execvp(command_name, arglist);
@@ -377,24 +455,29 @@ static int exec_general_command(command_t com){
     return ret;
 }
 
-
-
-static int exec_command(command_t com){
-    if(!strcmp("exit", com.command_name.str)){
+static int exec_command(command_t com)
+{
+    if (!strcmp("exit", com.command_name.str))
+    {
         return exit_builtin();
     }
-    else if(!strcmp(":", com.command_name.str)){
+    else if (!strcmp(":", com.command_name.str))
+    {
         return nop_builtin();
-    }else if(!strcmp("cd", com.command_name.str)){
+    }
+    else if (!strcmp("cd", com.command_name.str))
+    {
         return cd_builtin(com.args_list);
     }
     return exec_general_command(com);
 }
 
-static int exec_command_list(command_list_t list){
+static int exec_command_list(command_list_t list)
+{
     waiting_to_be_executed = list;
 
-    while(waiting_to_be_executed.length > 0){
+    while (waiting_to_be_executed.length > 0)
+    {
         command_t first = waiting_to_be_executed.current->command;
         waiting_to_be_executed = xll_destroy(waiting_to_be_executed);
         set_shell_ret_val(exec_command(first));
@@ -403,17 +486,16 @@ static int exec_command_list(command_list_t list){
     return shell_ret_val;
 }
 
-
-
-
-static char *get_prompt(void){
+static char *get_prompt(void)
+{
     static const string_t BASIC_PROMPT = as_string("$ ");
 
-    static string_t value = {.len=0, .str=NULL};
-    static char* saved_pwd = NULL;
-    
-    if(value.str == NULL || saved_pwd != get_pwd()){
-        if(value.str!=NULL)
+    static string_t value = {.len = 0, .str = NULL};
+    static char *saved_pwd = NULL;
+
+    if (value.str == NULL || saved_pwd != get_pwd())
+    {
+        if (value.str != NULL)
             free(value.str);
         saved_pwd = get_pwd();
         value = str_concat(raw_to_string(saved_pwd), BASIC_PROMPT);
@@ -422,68 +504,61 @@ static char *get_prompt(void){
     return value.str;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-static int interactive_mode(void){
+static int interactive_mode(void)
+{
     is_interactive_mode_flag = 1;
-    char *line = NULL;
-    while( ( line = readline(get_prompt())) ){
-        if(strcmp(line, ""))
+    char *line = NULL, *last_line = NULL;
+    while ((line = readline(get_prompt())))
+    {
+        if (strcmp(line, "") && (!last_line || strcmp(line, last_line)))
             add_history(line);
 
-        if(scan_string(line) == 0)
+        if (scan_string(line) == 0)
             exec_command_list(parser_ret_val);
 
-        free(line);
+        free(last_line);
+        last_line = line;
     }
+    free(last_line);
     putchar('\n');
     is_interactive_mode_flag = 0;
     return 0;
 }
 
+static int string_mode(char *str)
+{
+    if (scan_string(str) == 0)
+        exec_command_list(parser_ret_val);
+    return shell_ret_val;
+}
 
-    static int string_mode(char *str){
-        if(scan_string(str) == 0)
-            exec_command_list(parser_ret_val);
-        return shell_ret_val;
+static int file_mode(char *path)
+{
+    is_filereading_mode_flag = 1;
+
+    FILE *f = fopen(path, "r");
+    if (f == NULL)
+    {
+        warn("Can't open '%s'", path);
+        return set_shell_ret_val(ENOENT);
     }
 
-    static int file_mode(char *path){
-        is_filereading_mode_flag = 1;
+    *line_count() = 1;
+    if (scan_file(f) == 0)
+        exec_command_list(parser_ret_val);
 
-        FILE *f = fopen(path, "r");
-        if(f == NULL){
-            warn("Can't open '%s'", path);
-            return set_shell_ret_val(ENOENT);
-        }
+    fclose(f);
+    is_filereading_mode_flag = 0;
+    return shell_ret_val;
+}
 
-        *line_count() = 1;
-        if(scan_file(f) == 0)
-            exec_command_list(parser_ret_val);
+static int noninteractive_mode(int argc, char **argv)
+{
 
-        fclose(f);
-        is_filereading_mode_flag = 0;
-        return shell_ret_val;
-    }
-
-static int noninteractive_mode(int argc, char **argv){
-
-    if(**++argv == '-' && strchr(*argv, 'c') != NULL){
-        if(argc <= 2){
+    if (**++argv == '-' && strchr(*argv, 'c') != NULL)
+    {
+        if (argc <= 2)
+        {
             warnx("-c requires an argument");
             return set_shell_ret_val(EINVAL);
         }
@@ -492,11 +567,11 @@ static int noninteractive_mode(int argc, char **argv){
     return file_mode(*argv);
 }
 
-
-
-static int init_envvars(void){
-    char *wd = get_current_dir_name();
-    if(wd==NULL) wd = str_copy(DEFAULT_PWD_IF_NONE).str;
+static int init_envvars(void)
+{
+    char *wd = get_current_dir();
+    if (wd == NULL)
+        wd = str_copy(DEFAULT_PWD_IF_NONE).str;
     setenv("PWD", wd, 0);
     setenv("OLDPWD", DEFAULT_PWD_IF_NONE, 0);
     free(wd);
@@ -505,18 +580,29 @@ static int init_envvars(void){
     return set_shell_ret_val(0);
 }
 
-static int init(void){
+
+//</>
+
+
+
+
+
+
+
+
+static int init(void)
+{
     set_sigint_handler(&handler_when_idle);
     return init_envvars();
 }
 
+int shell_main(int argc, char **argv)
+{
 
-int shell_main(int argc, char **argv){
-
-    if(init())
+    if (init())
         return shell_ret_val;
 
-    if(argc <= 1)
+    if (argc <= 1)
         interactive_mode();
     else
         noninteractive_mode(argc, argv);
