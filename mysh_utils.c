@@ -345,13 +345,6 @@ static int await_current_child(void){
 
 
 
-
-
-
-
-static int exec_general_command(command_t com){
-
-
     char **make_command_arglist(command_t com){
         char **ret = (char**)alloc_memory((com.args_list.length+2)*sizeof(char*));
         char **it = ret;
@@ -367,8 +360,7 @@ static int exec_general_command(command_t com){
             return partial.str;
         return str_chr_str_concat(raw_to_string(get_pwd()), PATH_SEPARATOR, partial).str;
     }
-
-    //begin
+static int exec_general_command(command_t com){
 
     set_sigint_handler(&handler_when_child_running);
     int id = fork();
@@ -463,17 +455,13 @@ static int interactive_mode(void){
 }
 
 
-
-static int noninteractive_mode(int argc, char **argv){
-
-    
-    int string_mode(char *str){
+    static int string_mode(char *str){
         if(scan_string(str) == 0)
             exec_command_list(parser_ret_val);
         return shell_ret_val;
     }
 
-    int file_mode(char *path){
+    static int file_mode(char *path){
         is_filereading_mode_flag = 1;
 
         FILE *f = fopen(path, "r");
@@ -491,7 +479,7 @@ static int noninteractive_mode(int argc, char **argv){
         return shell_ret_val;
     }
 
-    //begin
+static int noninteractive_mode(int argc, char **argv){
 
     if(**++argv == '-' && strchr(*argv, 'c') != NULL){
         if(argc <= 2){
