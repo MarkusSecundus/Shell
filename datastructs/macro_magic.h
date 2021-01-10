@@ -4,12 +4,18 @@
 #include<stdarg.h>
 
 
+/**
+ * Drobná pomnocná makra, která jsem si původně napsal jako pomůcku k úkolu z Operačních systémů.
+ * 
+ * Autor: Jakub Hroník
+**/
+
 
 /**
  * Vrací něco, co je kompilátor schopen vyhodnotit jako číselnou konstantu rovnou počtu variadických argumentů předaných tomuto makru.
  * 
  * Všechny argumenty musí být stejného typu - ten je předán jako 0. argument a do výsledného počtu se nepočítá.
-*/
+**/
 #define VA_ARGS_COUNT(type, ...) (sizeof((type[]){__VA_ARGS__})/sizeof(type))
 
 
@@ -19,7 +25,7 @@
  * 
  * Všechny předané prvky musí být stejného typu, který je specifikovaný 1. argumentem,
  * vnitřní funkci, která přes ně iteruje, budou předány hodnotou.
-*/
+**/
 #define VA_ARGS_APPLY_TO_ALL(what, type, ...) ({\
     inline void __MACRO_MAGIC__applier_function___(int __MACRO_MAGIC__applier_function___remaining_count___, ...){\
         va_list __MACRO_MAGIC__applier_function___va_args___;\
@@ -41,7 +47,7 @@
  * 
  * Všechny předané prvky musí být stejného typu, který je specifikovaný 2. argumentem,
  * vnitřní funkci, která přes ně iteruje, budou předány hodnotou.
-*/
+**/
 #define VA_ARGS_FOLD_LEFT(applier, result_t, args_t, accumulator_init, ...) ({\
     inline result_t __MACRO_MAGIC__foldl_function___(result_t __MACRO_MAGIC__foldl_function___accumulator___, int __MACRO_MAGIC__foldl_function___remaining_count___, ...){\
         va_list __MACRO_MAGIC__foldl_function___va_args___;\
@@ -78,7 +84,7 @@
  *  AUTO(my_variable =, get_some_value(..) );
  * 
  * Nefunguje 
- * */
+**/
 #define AUTO(name_and_assignment_op, ...) __typeof__(__VA_ARGS__) name_and_assignment_op (__VA_ARGS__)
 
 
@@ -96,9 +102,6 @@
     })
 
 
-
-
-#define STRINGIFY(s) = #s
 
 
 
