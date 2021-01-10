@@ -128,16 +128,6 @@ static string_t str_concat(string_t a, string_t b)
     ret[len] = '\0';
     return (string_t){.len = len, .str = ret};
 }
-static string_t str_chr_str_concat(string_t a, char c, string_t b)
-{
-    int len = a.len + 1 + b.len;
-    char *ret = (char *)alloc_memory((len + 1) * sizeof(char));
-    memcpy(ret, a.str, a.len);
-    ret[a.len] = c;
-    memcpy(ret + a.len + 1, b.str, b.len);
-    ret[len] = '\0';
-    return (string_t){.len = len, .str = ret};
-}
 
 string_buffer_t make_string_buffer(int len)
 {
@@ -223,6 +213,8 @@ command_list_t destroy_command_list(command_list_t list)
 
 
 
+
+
 //<manipulation of environment variables>
 
 
@@ -236,7 +228,6 @@ char* get_current_dir(void){
         grow_buffer(&buf, 32);
     return ret;
 }
-
 
 
 static string_t get_home_dir(void)
@@ -400,6 +391,7 @@ int get_child_return_value(int stat_loc)
         return sigterm + RET_VAL_OFFSET_WHEN_KILLED_BY_SIGNAL;
     }
     err(ENOTSUP, "Process terminated in unsupported way.\n");
+    _Exit(ENOTSUP);
 }
 
 static int await_current_child(void)
@@ -419,6 +411,7 @@ static int await_current_child(void)
     return shell_ret_val;
 }
 
+
 char **make_command_arglist(command_t com)
 {
     char **ret = (char **)alloc_memory((com.args_list.length + 2) * sizeof(char *));
@@ -429,13 +422,6 @@ char **make_command_arglist(command_t com)
     *it = NULL;
     return ret;
 }
-
-char *make_command_path(string_t partial)
-{
-    if (partial.str[0] == PATH_SEPARATOR || strchr(partial.str, PATH_SEPARATOR) == NULL)
-        return partial.str;
-    return str_chr_str_concat(raw_to_string(get_pwd()), PATH_SEPARATOR, partial).str;
-}
 static int exec_general_command(command_t com)
 {
 
@@ -444,9 +430,8 @@ static int exec_general_command(command_t com)
     if (id == 0)
     {
         char **arglist = make_command_arglist(com);
-        char *command_name = make_command_path(com.command_name);
-        execvp(command_name, arglist);
-        err(UNKNOWN_COMMAND_RET_VAL, "Unable to exec command '%s'", command_name);
+        execvp(com.command_name.str, arglist);
+        err(UNKNOWN_COMMAND_RET_VAL, "Unable to exec command '%s'", com.command_name.str);
         _Exit(UNKNOWN_COMMAND_RET_VAL);
     }
     current_child_pid = id;

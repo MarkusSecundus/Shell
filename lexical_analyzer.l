@@ -74,8 +74,10 @@ int scan_string(const char* to_scan)
 {
     yy_scan_string(to_scan);
 
+    BEGIN(INITIAL);
     int ret = yyparse();
 
+    flex_cleanup();
     yy_delete_buffer(YY_CURRENT_BUFFER);
     return ret;
 }
@@ -85,11 +87,18 @@ int scan_file(FILE *file)
     YY_BUFFER_STATE buf = yy_create_buffer(file, YY_BUF_SIZE);
     yy_switch_to_buffer(buf);
 
+    BEGIN(INITIAL);
     int ret = yyparse();
 
+    flex_cleanup();
     yy_delete_buffer(buf);
     return ret;
 }
 
 
-
+void flex_cleanup(void)
+{
+    BEGIN(INITIAL);
+    free(buffer.str.str);
+    buffer = string_buffer_empty;
+}
