@@ -24,7 +24,6 @@
 //<foreign functions needed in the programme that for some reason are'nt mentioned in standard headers>
 int yylex(void);
 int yyerror(char *m);
-#define get_current_dir_name() (getcwd(NULL, 0))
 
 #define errprintf(...) dprintf(STDERR_DESCRIPTOR, __VA_ARGS__)
 
@@ -60,6 +59,8 @@ typedef struct{
 } string_buffer_t;
 
 string_t str_copy(const char *to_copy);
+
+#define string_buffer_empty ( (string_buffer_t){.buffer_len = 0, .str = (string_t){.len = 0, .str = NULL}} )
 
 string_buffer_t make_string_buffer(int len);
 
