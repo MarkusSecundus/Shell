@@ -2,7 +2,7 @@
     #include "mysh_utils.h"
     #include "syntax_analyzer.tab.h"
 
-    token_t yylval;
+    //token_t yylval;
 
     string_buffer_t buffer;
 
