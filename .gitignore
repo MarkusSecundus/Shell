@@ -1,5 +1,4 @@
 /target/
 mysh
 syntax_analyzer.output
-syntax_analyzer.tab.c
-syntax_analyzer.tab.h
+syntax_analyzer.tab.*
