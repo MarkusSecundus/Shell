@@ -5,6 +5,11 @@
 #include <string.h>
 #include <stdlib.h>
 
+
+/**
+ * Autor: Jakub Hroník
+**/
+
 #define xll_memory_allocator alloc_memory
 #include "datastructs/ultimate_list_on_heap.h"
 
