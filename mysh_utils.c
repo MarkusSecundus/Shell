@@ -450,6 +450,7 @@ static int interactive_mode(void){
 
         free(line);
     }
+    putchar('\n');
     is_interactive_mode_flag = 0;
     return 0;
 }

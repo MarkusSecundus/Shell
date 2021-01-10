@@ -24,7 +24,7 @@
 //<foreign functions needed in the programme that for some reason are'nt mentioned in standard headers>
 int yylex(void);
 int yyerror(char *m);
-char *get_current_dir_name(void);
+#define get_current_dir_name() (getcwd(NULL, 0))
 
 
 #define errprintf(...) dprintf(STDERR_DESCRIPTOR, __VA_ARGS__)
