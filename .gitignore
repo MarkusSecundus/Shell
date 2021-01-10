@@ -2,3 +2,4 @@
 mysh
 syntax_analyzer.output
 syntax_analyzer.tab.*
+lex.yy.c
