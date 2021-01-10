@@ -5,6 +5,14 @@
 
 #include "ultimate_list.h"
 
+
+/**
+ * Rozšíření ultimate_list.h o funkce řešící dynamickou alokaci a delalokaci na haldě.
+ * 
+ *  Autor: Jakub Hroník
+**/
+
+
 #ifndef xll_memory_allocator
 #define xll_memory_allocator malloc
 #endif
