@@ -12,7 +12,8 @@
  * Autor: Jakub Hroník
 **/
 
-#define xll_memory_allocator alloc_memory
+#define XLL_MEMORY_ALLOCATOR alloc_memory
+#define XLL_MEMORY_DEALLOCATOR free_memory
 #include "datastructs/ultimate_list_on_heap.h"
 
 #define STDERR_DESCRIPTOR 2
@@ -41,7 +42,8 @@ int fileno(FILE *);
 void *alloc_memory(size_t size);
 //wrapper arround realloc(2) that prints out error message and exits if not successfull
 void *realloc_memory(void *to_realloc, size_t new_size);
-
+//wrapper arround free(1)
+void free_memory(void *to_free);
 
 
 //main function of the shell

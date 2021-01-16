@@ -83,6 +83,10 @@ void *realloc_memory(void *to_realloc, size_t new_size)
     }
     return ret;
 }
+
+void free_memory(void *to_free){
+    return free(to_free);
+}
 //</>
 
 
@@ -176,11 +180,11 @@ command_t append_arg_to_command(command_t self, string_t arg)
 
 void destroy_command(command_t com)
 {
-    free(com.command_name.str);
+    free_memory(com.command_name.str);
     str_list_t list = com.args_list;
     while (list.length > 0)
     {
-        free(list.current->str.str);
+        free_memory(list.current->str.str);
         list = xll_destroy(list);
     }
 }
@@ -344,8 +348,8 @@ static int cd_builtin(str_list_t args)
     if (chdir(path.str) != 0)
     {
         warn("cd: `%s`", path.str);
-        free(path.str);
-        free(new_oldpwd.str);
+        free_memory(path.str);
+        free_memory(new_oldpwd.str);
         return ENOENT;
     }
     if (reverting_to_oldpwd)
@@ -356,9 +360,9 @@ static int cd_builtin(str_list_t args)
     set_oldpwd(new_oldpwd.str);
     set_pwd(real_curr_pwd);
 
-    free(real_curr_pwd);
-    free(path.str);
-    free(new_oldpwd.str);
+    free_memory(real_curr_pwd);
+    free_memory(path.str);
+    free_memory(new_oldpwd.str);
     return 0;
 }
 //      </>
@@ -476,7 +480,7 @@ static char *get_prompt(void)
     if (value.str == NULL || saved_pwd != get_pwd())
     {
         if (value.str != NULL)
-            free(value.str);
+            free_memory(value.str);
         saved_pwd = get_pwd();
         value = str_concat(raw_to_string(saved_pwd), BASIC_PROMPT);
     }
@@ -496,10 +500,10 @@ static int interactive_mode(void)
         if (scan_string(line) == 0)
             exec_command_list(parser_ret_val);
 
-        free(last_line);
+        free_memory(last_line);
         last_line = line;
     }
-    free(last_line);
+    free_memory(last_line);
     putchar('\n');
     is_interactive_mode_flag = 0;
     return 0;
@@ -554,7 +558,7 @@ static int init_envvars(void)
         wd = str_copy(DEFAULT_PWD_IF_NONE).str;
     setenv("PWD", wd, 0);
     setenv("OLDPWD", DEFAULT_PWD_IF_NONE, 0);
-    free(wd);
+    free_memory(wd);
     str_list_node_t tmp = {.str = raw_to_string(get_pwd())};
     cd_builtin(xll_init(tmp));
     return set_shell_ret_val(0);

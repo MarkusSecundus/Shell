@@ -13,12 +13,16 @@
 **/
 
 
-#ifndef xll_memory_allocator
-#define xll_memory_allocator malloc
+#ifndef XLL_MEMORY_ALLOCATOR
+#define XLL_MEMORY_ALLOCATOR malloc
+#endif
+
+#ifndef XLL_MEMORY_DEALLOCATOR
+#define XLL_MEMORY_DEALLOCATOR free
 #endif
 
 #define xll_create(type, ...) ({\
-    type *_XLL_return_val___ = (type*)xll_memory_allocator(sizeof(type));\
+    type *_XLL_return_val___ = (type*)XLL_MEMORY_ALLOCATOR(sizeof(type));\
     *_XLL_return_val___ = (type) __VA_ARGS__;\
     xll_init(*_XLL_return_val___);\
 })
@@ -33,11 +37,11 @@
     handl_t _XLL_tmp_ret_val = _XLL_tmp_handl;\
     if(_XLL_tmp_ret_val.length>1) {\
         _XLL_tmp_ret_val = xll_extract(_XLL_tmp_ret_val);\
-        free(_XLL_tmp_to_be_destroyed__);\
+        XLL_MEMORY_DEALLOCATOR(_XLL_tmp_to_be_destroyed__);\
     }\
     else{\
         if(_XLL_tmp_handl.length == 1) \
-            free(_XLL_tmp_to_be_destroyed__);\
+            XLL_MEMORY_DEALLOCATOR(_XLL_tmp_to_be_destroyed__);\
         _XLL_tmp_ret_val = (handl_t){.current = NULL, .last = NULL, .length = 0};\
     }\
     _XLL_tmp_ret_val;\
