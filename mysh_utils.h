@@ -1,6 +1,8 @@
 #ifndef _MYSH_UTILS_GUARD___fhndsjfhdskfdsfdsfsdfds
 #define _MYSH_UTILS_GUARD___fhndsjfhdskfdsfdsfsdfds
 
+
+#define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -29,6 +31,7 @@
 //<foreign functions needed in the programme that for some reason are'nt mentioned in standard headers>
 int yylex(void);
 int yyerror(char *m);
+int fileno(FILE *);
 
 #define errprintf(...) dprintf(STDERR_DESCRIPTOR, __VA_ARGS__)
 

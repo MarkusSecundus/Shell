@@ -1,5 +1,6 @@
 
 
+#include "mysh_utils.h"
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
@@ -14,7 +15,6 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
-#include "mysh_utils.h"
 
 #include "syntax_analyzer.tab.h"
 
@@ -69,8 +69,7 @@ void *alloc_memory(size_t size)
     void *ret = malloc(size);
     if (!ret)
     {
-        err(ENOMEM, "Unable to allocate %ld bytes - exiting!\n", size);
-        _Exit(ENOMEM);
+        errx(ENOMEM, "Unable to allocate %ld bytes - exiting!\n", size);
     }
     return ret;
 }
@@ -80,8 +79,7 @@ void *realloc_memory(void *to_realloc, size_t new_size)
     void *ret = realloc(to_realloc, new_size);
     if (!ret)
     {
-        err(ENOMEM, "Unable to realloc %p to %ld bytes - exiting!\n", to_realloc, new_size);
-        _Exit(ENOMEM);
+        errx(ENOMEM, "Unable to realloc %p to %ld bytes - exiting!\n", to_realloc, new_size);
     }
     return ret;
 }
@@ -224,7 +222,7 @@ char* get_current_dir(void){
         return ret;
     
     string_buffer_t buf = make_string_buffer(32);
-    while(!(ret=getcwd(buf.str.str, buf.buffer_len)))
+    while(!(ret = getcwd(buf.str.str, buf.buffer_len)))
         grow_buffer(&buf, 32);
     return ret;
 }
@@ -288,15 +286,14 @@ static void nop_handler_fnc(int t)
     (void)t;
 }
 
-const struct sigaction handler_when_idle = (struct sigaction){.sa_handler = sigint_handler_fnc, .sa_flags = SA_RESTART};
-const struct sigaction handler_when_child_running = (struct sigaction){.sa_handler = nop_handler_fnc, .sa_flags = SA_RESTART};
+const struct sigaction handler_when_idle = {.sa_handler = sigint_handler_fnc, .sa_flags = SA_RESTART};
+const struct sigaction handler_when_child_running = {.sa_handler = nop_handler_fnc, .sa_flags = SA_RESTART};
 
 static void set_sigint_handler(const struct sigaction *handl)
 {
     if (sigaction(SIGINT, handl, NULL))
     {
         err(-1, "Unable to register SIGINT signal handler!");
-        _Exit(-1);
     }
 }
 
@@ -391,7 +388,6 @@ int get_child_return_value(int stat_loc)
         return sigterm + RET_VAL_OFFSET_WHEN_KILLED_BY_SIGNAL;
     }
     err(ENOTSUP, "Process terminated in unsupported way.\n");
-    _Exit(ENOTSUP);
 }
 
 static int await_current_child(void)
@@ -432,7 +428,6 @@ static int exec_general_command(command_t com)
         char **arglist = make_command_arglist(com);
         execvp(com.command_name.str, arglist);
         err(UNKNOWN_COMMAND_RET_VAL, "Unable to exec command '%s'", com.command_name.str);
-        _Exit(UNKNOWN_COMMAND_RET_VAL);
     }
     current_child_pid = id;
     int ret = await_current_child();
@@ -583,7 +578,6 @@ static int init(void)
 
 int shell_main(int argc, char **argv)
 {
-
     if (init())
         return shell_ret_val;
 
