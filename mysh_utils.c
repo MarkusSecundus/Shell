@@ -34,16 +34,8 @@ int set_shell_ret_val(int value)
     return shell_ret_val = value;
 }
 
-int *line_count(void)
-{
-    static int value = 0;
-    return &value;
-}
-char **current_token(void)
-{
-    static char *value = "(nil)";
-    return &value;
-}
+int line_count = 0;
+char *current_token = "(nil)";
 
 static int is_interactive_mode_flag = 0;
 static int is_filereading_mode_flag = 0;
@@ -527,7 +519,7 @@ static int file_mode(char *path)
         return set_shell_ret_val(ENOENT);
     }
 
-    *line_count() = 1;
+    line_count = 1;
     if (scan_file(f) == 0)
         exec_command_list(parser_ret_val);
 

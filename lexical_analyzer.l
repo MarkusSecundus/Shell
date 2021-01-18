@@ -6,9 +6,9 @@
 
     string_buffer_t buffer;
 
-    #define ret_IDENTIFIER(text) { yylval.string = (text); *current_token() = yylval.string.str; buffer = string_buffer_empty; return IDENTIFIER; }
-    #define ret_SEMIC { *current_token() = ";";return SEMIC; }
-    #define ret_NEWL { *line_count()+=1; *current_token()="\\n"; return NEWL; }
+    #define ret_IDENTIFIER(text) { yylval.string = (text); current_token = yylval.string.str; buffer = string_buffer_empty; return IDENTIFIER; }
+    #define ret_SEMIC { current_token = ";";return SEMIC; }
+    #define ret_NEWL { ++line_count; current_token="\\n"; return NEWL; }
 %}
 
 %option noyywrap nounput noinput
@@ -41,7 +41,7 @@ IDENTIFIER_CHAR (!|([$-~]{-}[;']))
 
     \" { BEGIN(INITIAL); ret_IDENTIFIER(buffer.str); }
     
-    \n { *line_count()+=1; append_char_to_buffer(&buffer, *yytext); }
+    \n { ++line_count; append_char_to_buffer(&buffer, *yytext); }
 
     . { append_char_to_buffer(&buffer, *yytext); }
 }
@@ -53,12 +53,12 @@ IDENTIFIER_CHAR (!|([$-~]{-}[;']))
 
     ' { BEGIN(INITIAL); ret_IDENTIFIER(buffer.str); }
 
-    \n { *line_count()+=1; append_char_to_buffer(&buffer, *yytext); }
+    \n { ++line_count; append_char_to_buffer(&buffer, *yytext); }
 
     . { append_char_to_buffer(&buffer, *yytext); }
 }
 
-\n { *line_count()+=1; return NEWL; }
+\n { ++line_count; return NEWL; }
 
 {BLANK_CHAR} {}
 

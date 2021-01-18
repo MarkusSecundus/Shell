@@ -140,9 +140,9 @@ int set_shell_ret_val(int value);              //sets the global variable for sh
 int is_interactive_mode(void); //whether the shell runs in interactive mode
 int is_filereading_mode(void); //whether the shell is running from a file
 
-int *line_count(void); //number of the line that's currently being processed by flex
+extern int line_count; //number of the line that's currently being processed by flex
 
-char **current_token(void); //pointer to a global variable that holds the stringic representation of the token that is currently being processed by flex (for better debug messages)
+extern char *current_token; //pointer to a global variable that holds the stringic representation of the token that is currently being processed by flex (for better debug messages)
 
 
 

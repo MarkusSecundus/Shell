@@ -57,9 +57,9 @@ int yyerror(char *m){
     set_shell_ret_val(SYNTAX_ERROR_RET_VAL);
     
     if(is_filereading_mode())
-        warnx("'%s'... on line %d near token '%s'", m, *line_count(), *current_token());
+        warnx("'%s'... on line %d near token '%s'", m, line_count, current_token);
     else
-        warnx("'%s'... near token '%s'", m, *current_token());
+        warnx("'%s'... near token '%s'", m, current_token);
     
     return 0;
 }
