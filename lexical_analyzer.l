@@ -9,6 +9,10 @@
     #define ret_IDENTIFIER(text) { yylval.string = (text); current_token = yylval.string.str; buffer = string_buffer_empty; return IDENTIFIER; }
     #define ret_SEMIC { current_token = ";";return SEMIC; }
     #define ret_NEWL { ++line_count; current_token="\\n"; return NEWL; }
+    #define ret_PIPE { current_token = "|"; return PIPE; }
+    #define ret_REDIRIN { current_token = "<"; return REDIRIN; }
+    #define ret_REDIROUT { current_token = ">"; return REDIROUT; }
+    #define ret_REDIROUTA { current_token = ">>"; return REDIROUTA; }
 %}
 
 %option noyywrap nounput noinput
@@ -31,6 +35,10 @@ IDENTIFIER_CHAR (!|([$-~]{-}[;']))
 
 
 ";" { ret_SEMIC; }
+"|" { ret_PIPE; }
+"<" { ret_REDIRIN; }
+">" { ret_REDIROUT; }
+">>" { ret_REDIROUTA; }
 
 {IDENTIFIER_CHAR}+ { ret_IDENTIFIER( str_copy(yytext)); }
 
