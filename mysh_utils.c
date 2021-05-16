@@ -12,6 +12,9 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 
+#include <sys/stat.h>
+#include <fcntl.h>
+
 #include <readline/readline.h>
 #include <readline/history.h>
 
@@ -188,12 +191,12 @@ simple_command_t make_empty_simple_command(){
     return (simple_command_t){.command_name = NULL_STRING, .args_list = xll_empty(str_list_t), .redirections = xll_empty(redirect_list_t)};
 }
 
-simple_command_t append_redirection_to_simple_command(simple_command_t self, string_t file_name, redirect_type_t redirect_type){
+static simple_command_t append_redirection_to_simple_command(simple_command_t self, string_t file_name, redirect_type_t redirect_type){
     self.redirections = xll_add(self.redirections, {.file_name = file_name, .redirect_type = redirect_type});
     return self;
 }
 
-simple_command_t append_identifier_to_simple_command(simple_command_t self, string_t to_append){
+static simple_command_t append_identifier_to_simple_command(simple_command_t self, string_t to_append){
     if(self.command_name.str == NULL)
     {
         self.command_name = to_append;
@@ -204,6 +207,13 @@ simple_command_t append_identifier_to_simple_command(simple_command_t self, stri
     return self;
 }
 
+simple_command_t append_segment_to_simple_command(simple_command_t self, simple_command_segment_t to_append){
+    if(to_append.redirect == REDIRECT_NOREDIRECT){
+        return append_identifier_to_simple_command(self, to_append.identifier);
+    }else{
+        return append_redirection_to_simple_command(self, to_append.identifier, to_append.redirect);
+    }
+}
 
 command_t make_piped_command(simple_command_t first_segment){
     return (command_t){.segments = xll_create(simple_command_list_node_t, {.value = first_segment})};
@@ -225,12 +235,12 @@ void destroy_piped_command(command_t self){
 
 
 
-command_list_t make_command_list(simple_command_t first)
+command_list_t make_command_list(command_t first)
 {
     return xll_create(command_list_node_t, {.command = first});
 }
 
-command_list_t append_to_command_list(command_list_t list, simple_command_t to_append)
+command_list_t append_to_command_list(command_list_t list, command_t to_append)
 {
     return xll_add(list, {.command = to_append});
 }
@@ -239,7 +249,7 @@ command_list_t destroy_command_list(command_list_t list)
 {
     while (list.length > 0)
     {
-        destroy_simple_command(list.current->command);
+        destroy_piped_command(list.current->command);
         list = xll_destroy(list);
     }
     return xll_empty(command_list_t);
@@ -458,6 +468,63 @@ char **make_command_arglist(simple_command_t com)
     *it = NULL;
     return ret;
 }
+
+
+static struct{file_descriptor_t input, output;} load_file_descriptors(redirect_list_t redirects){
+    __typeof__(load_file_descriptors(redirects)) ret;
+    ret.input = -1;
+    ret.output = -1;
+
+    xll_foreach(it, redirects){
+        switch (it->redirect_type)
+        {
+        case REDIRECT_STDIN:
+            if(ret.input >= 0) close(ret.input);
+            if( (ret.input = open(it->file_name.str, O_WRONLY)) < 0)
+                err(errno, "Cannot open file %s", it->file_name.str);
+            break;
+        
+        case REDIRECT_STDOUT:
+            if(ret.output >= 0) close(ret.output);
+            if( (ret.output = open(it->file_name.str, O_RDONLY | O_CREAT)) < 0)
+                err(errno, "Cannot open file %s", it->file_name.str); 
+            break;
+        
+        case REDIRECT_STDOUT_APPEND:
+            if(ret.output >= 0) close(ret.output);
+            if( (ret.output = open(it->file_name.str, O_RDONLY | O_CREAT | O_APPEND)) < 0)
+                err(errno, "Cannot open file %s", it->file_name.str); 
+            break;
+
+        default:;
+        }
+    }
+
+    return ret;
+}
+
+static void set_file_redirections(redirect_list_t redirects){
+    AUTO(redirs =, load_file_descriptors(redirects));
+
+    if(redirs.input >= 0){
+        dup2(redirs.input, STDIN_FILENO);
+        close(redirs.input);
+    }
+    if(redirs.output >= 0){
+        dup2(redirs.output, STDOUT_FILENO);
+        close(redirs.output);
+    }
+}
+
+static void turn_self_into_a_command(simple_command_t com){
+        set_file_redirections(com.redirections);
+        char **arglist = make_command_arglist(com);
+
+        execvp(com.command_name.str, arglist);
+        
+        err(UNKNOWN_COMMAND_RET_VAL, "Unable to exec command '%s'", com.command_name.str);
+}
+
 static int exec_general_command(simple_command_t com)
 {
 
@@ -465,9 +532,7 @@ static int exec_general_command(simple_command_t com)
     int id = fork();
     if (id == 0)
     {
-        char **arglist = make_command_arglist(com);
-        execvp(com.command_name.str, arglist);
-        err(UNKNOWN_COMMAND_RET_VAL, "Unable to exec command '%s'", com.command_name.str);
+        turn_self_into_a_command(com);
     }
     current_child_pid = id;
     int ret = await_current_child();
@@ -475,15 +540,15 @@ static int exec_general_command(simple_command_t com)
     return ret;
 }
 
-static int exec_command(simple_command_t com)
+static int exec_simple_command(simple_command_t com)
 {
-    if (!strcmp("exit", com.command_name.str))
-    {
-        return exit_builtin();
-    }
-    else if (!strcmp(":", com.command_name.str))
+    if(com.command_name.str == NULL || !strcmp(":", com.command_name.str))
     {
         return nop_builtin();
+    }
+    else if (!strcmp("exit", com.command_name.str))
+    {
+        return exit_builtin();
     }
     else if (!strcmp("cd", com.command_name.str))
     {
@@ -492,16 +557,25 @@ static int exec_command(simple_command_t com)
     return exec_general_command(com);
 }
 
+
+static int exec_command(command_t com){
+    if(com.segments.length == 1)
+        return exec_simple_command(com.segments.current->value);
+
+    return 0;   //TODO: dokončit!
+}
+
+
 static int exec_command_list(command_list_t list)
 {
     waiting_to_be_executed = list;
 
     while (waiting_to_be_executed.length > 0)
     {
-        simple_command_t first = waiting_to_be_executed.current->command;
+        command_t first = waiting_to_be_executed.current->command;
         waiting_to_be_executed = xll_destroy(waiting_to_be_executed);
-        set_shell_ret_val(exec_command(first));
-        destroy_simple_command(first);
+        set_shell_ret_val(exec_command(first)); 
+        destroy_piped_command(first);
     }
     return shell_ret_val;
 }

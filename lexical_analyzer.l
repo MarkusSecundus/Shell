@@ -23,7 +23,7 @@ BLANK_CHAR [\0- ]
 SINGLE_LINE_COMMENT ("#"[^\n]*)
 
 
-IDENTIFIER_CHAR (!|([$-~]{-}[;']))
+IDENTIFIER_CHAR (!|([$-~]{-}[;'><]))
 
 %x string_reader
 %x string_reader_apostrophe
