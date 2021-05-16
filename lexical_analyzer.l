@@ -10,9 +10,9 @@
     #define ret_SEMIC { current_token = ";";return SEMIC; }
     #define ret_NEWL { ++line_count; current_token="\\n"; return NEWL; }
     #define ret_PIPE { current_token = "|"; return PIPE; }
-    #define ret_REDIRIN { current_token = "<"; return REDIRIN; }
-    #define ret_REDIROUT { current_token = ">"; return REDIROUT; }
-    #define ret_REDIROUTA { current_token = ">>"; return REDIROUTA; }
+    #define ret_REDIRIN { yylval.redirect_type = REDIRECT_STDIN; current_token = "<"; return REDIR; }
+    #define ret_REDIROUT { yylval.redirect_type = REDIRECT_STDOUT; current_token = ">"; return REDIR; }
+    #define ret_REDIROUTA { yylval.redirect_type = REDIRECT_STDOUT_APPEND; current_token = ">>"; return REDIR; }
 %}
 
 %option noyywrap nounput noinput

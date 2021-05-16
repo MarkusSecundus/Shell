@@ -8,7 +8,7 @@
 %token<string> IDENTIFIER
 %token SEMIC NEWL 
 %token PIPE
-%token REDIRIN REDIROUT REDIROUTA
+%token<redirect_type> REDIR
 
 /*
 %type<command> command
@@ -53,11 +53,9 @@ simple_command:
 
 command_segment:
     IDENTIFIER
-    | redir IDENTIFIER
+    | REDIR IDENTIFIER
     ;
 
-
-redir: REDIRIN | REDIROUT | REDIROUTA ;
 
 
 

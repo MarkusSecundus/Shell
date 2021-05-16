@@ -159,34 +159,78 @@ void append_char_to_buffer(string_buffer_t *buf, char c)
 
 //<structures for representing commands in memory>
 
-command_t make_command(string_t command_name)
+
+void destroy_simple_command(simple_command_t com)
 {
-    return (command_t){.command_name = command_name, .args_list = xll_empty(str_list_t)};
+    free_memory(com.command_name.str);
+
+    {
+        str_list_t list = com.args_list;
+        while (list.length > 0)
+        {
+            free_memory(list.current->str.str);
+            list = xll_destroy(list);
+        }
+    }
+    {
+        redirect_list_t list = com.redirections;
+        while (list.length > 0)
+        {
+            free_memory(list.current->file_name.str);
+            list = xll_destroy(list);
+        }
+    }
 }
 
-command_t append_arg_to_command(command_t self, string_t arg)
-{
-    self.args_list = xll_add(self.args_list, {.str = arg});
+
+
+simple_command_t make_empty_simple_command(){
+    return (simple_command_t){.command_name = NULL_STRING, .args_list = xll_empty(str_list_t), .redirections = xll_empty(redirect_list_t)};
+}
+
+simple_command_t append_redirection_to_simple_command(simple_command_t self, string_t file_name, redirect_type_t redirect_type){
+    self.redirections = xll_add(self.redirections, {.file_name = file_name, .redirect_type = redirect_type});
     return self;
 }
 
-void destroy_command(command_t com)
-{
-    free_memory(com.command_name.str);
-    str_list_t list = com.args_list;
-    while (list.length > 0)
+simple_command_t append_identifier_to_simple_command(simple_command_t self, string_t to_append){
+    if(self.command_name.str == NULL)
     {
-        free_memory(list.current->str.str);
+        self.command_name = to_append;
+    }else
+    {
+        self.args_list = xll_add(self.args_list, {.str = to_append});
+    }
+    return self;
+}
+
+
+command_t make_piped_command(simple_command_t first_segment){
+    return (command_t){.segments = xll_create(simple_command_list_node_t, {.value = first_segment})};
+}
+
+command_t append_to_piped_command(command_t self, simple_command_t to_append){
+    self.segments = xll_add(self.segments, {.value = to_append});
+    return self;
+}
+
+void destroy_piped_command(command_t self){
+    simple_command_list_t list = self.segments;
+    while(list.length > 0)
+    {
+        destroy_simple_command(list.current->value);
         list = xll_destroy(list);
     }
 }
 
-command_list_t make_command_list(command_t first)
+
+
+command_list_t make_command_list(simple_command_t first)
 {
     return xll_create(command_list_node_t, {.command = first});
 }
 
-command_list_t append_to_command_list(command_list_t list, command_t to_append)
+command_list_t append_to_command_list(command_list_t list, simple_command_t to_append)
 {
     return xll_add(list, {.command = to_append});
 }
@@ -195,7 +239,7 @@ command_list_t destroy_command_list(command_list_t list)
 {
     while (list.length > 0)
     {
-        destroy_command(list.current->command);
+        destroy_simple_command(list.current->command);
         list = xll_destroy(list);
     }
     return xll_empty(command_list_t);
@@ -404,7 +448,7 @@ static int await_current_child(void)
 }
 
 
-char **make_command_arglist(command_t com)
+char **make_command_arglist(simple_command_t com)
 {
     char **ret = (char **)alloc_memory((com.args_list.length + 2) * sizeof(char *));
     char **it = ret;
@@ -414,7 +458,7 @@ char **make_command_arglist(command_t com)
     *it = NULL;
     return ret;
 }
-static int exec_general_command(command_t com)
+static int exec_general_command(simple_command_t com)
 {
 
     set_sigint_handler(&handler_when_child_running);
@@ -431,7 +475,7 @@ static int exec_general_command(command_t com)
     return ret;
 }
 
-static int exec_command(command_t com)
+static int exec_command(simple_command_t com)
 {
     if (!strcmp("exit", com.command_name.str))
     {
@@ -454,10 +498,10 @@ static int exec_command_list(command_list_t list)
 
     while (waiting_to_be_executed.length > 0)
     {
-        command_t first = waiting_to_be_executed.current->command;
+        simple_command_t first = waiting_to_be_executed.current->command;
         waiting_to_be_executed = xll_destroy(waiting_to_be_executed);
         set_shell_ret_val(exec_command(first));
-        destroy_command(first);
+        destroy_simple_command(first);
     }
     return shell_ret_val;
 }
@@ -466,7 +510,7 @@ static char *get_prompt(void)
 {
     static const string_t BASIC_PROMPT = as_string("$ ");
 
-    static string_t value = {.len = 0, .str = NULL};
+    static string_t value = NULL_STRING;
     static char *saved_pwd = NULL;
 
     if (value.str == NULL || saved_pwd != get_pwd())
