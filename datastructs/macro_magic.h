@@ -103,7 +103,11 @@
 
 
 
-
+#define LAMBDA(ret_t, ...) \
+    ({\
+        ret_t __lambda___ __VA_ARGS__;\
+        __lambda___;\
+    })
 
 
 
