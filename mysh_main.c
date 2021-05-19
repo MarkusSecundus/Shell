@@ -1,6 +1,6 @@
 
 
-#include "mysh_utils.h"
+#include "mysh_main.h"
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
@@ -89,10 +89,10 @@ XLL_TYPEDEF(pid_list_t, pid_list_node_t,
     pid_t value;
 );
 
-static pid_list_t current_children_pids;
+static pid_list_t current_children_pids = xll_empty(pid_list_t);
 
 //static pid_t current_child_pid;
-static command_list_t waiting_to_be_executed;
+static command_list_t waiting_to_be_executed = xll_empty(command_list_t);
 
 //      <handling SIGINT interrupt>
 static void sigint_handler_fnc(int t)
@@ -127,10 +127,10 @@ static void set_sigint_handler(const struct sigaction *handl)
 
 
 
-
-
-
 //      <builtin commands>
+
+typedef int (*builtin_command_t)(simple_command_t info, file_descriptor_t in, file_descriptor_t out);
+
 static int exit_builtin(simple_command_t info, file_descriptor_t in, file_descriptor_t out)
 {
     (void)info;
@@ -227,23 +227,7 @@ int get_child_return_value(int stat_loc)
     }
     err(ENOTSUP, "Process terminated in unsupported way.\n");
 }
-/*
-static int await_current_child(void)
-{
 
-    if (current_child_pid <= 0)
-        return shell_ret_val;
-
-    int stat_loc;
-    if (waitpid(current_child_pid, &stat_loc, 0) != -1)
-    {
-        return get_child_return_value(stat_loc);
-    }
-
-    current_child_pid = 0;
-
-    return shell_ret_val;
-}*/
 
 static int await_all_current_children(void){
     int ret = 0;
@@ -327,10 +311,7 @@ static void turn_self_into_a_command(simple_command_t com){
 
 static void warn_with_ignored_first_arg(int errnum, const char* format, ...){
     (void)errnum;
-    va_list args;
-    va_start(args, format);
-    vwarn(format, args);
-    va_end(args);
+    REDIRECT_VARARGS_VOID(vwarn, format);
 }
 static int exec_provided_builtin_command(simple_command_t com, int (*impl)(simple_command_t info, file_descriptor_t in, file_descriptor_t out)){
 
@@ -369,7 +350,7 @@ static int exec_general_command(simple_command_t com)
 }
 
 
-static int(*recognize_builtin_command(string_t command_name))(simple_command_t, file_descriptor_t, file_descriptor_t){
+static builtin_command_t recognize_builtin_command(string_t command_name){
     if(command_name.str == NULL || !strcmp(":", command_name.str))
     {
         return nop_builtin;
@@ -387,7 +368,7 @@ static int(*recognize_builtin_command(string_t command_name))(simple_command_t, 
 
 static int exec_simple_command(simple_command_t com)
 {
-    AUTO(builtin =, recognize_builtin_command(com.command_name));
+    builtin_command_t builtin = recognize_builtin_command(com.command_name);
     return builtin
         ? exec_provided_builtin_command(com, builtin)
         : exec_general_command(com);
@@ -395,7 +376,7 @@ static int exec_simple_command(simple_command_t com)
 
 static int as_simple_command(simple_command_t com)
 {
-    AUTO(builtin =, recognize_builtin_command(com.command_name));
+    builtin_command_t builtin = recognize_builtin_command(com.command_name);
     return builtin
         ? exec_provided_builtin_command(com, builtin)
         : (turn_self_into_a_command(com), 0);
@@ -441,6 +422,7 @@ static int exec_command_pipeline(command_t com){
     set_sigint_handler(&handler_when_idle);
     return ret;
 }
+
 
 
 

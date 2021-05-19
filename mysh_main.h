@@ -4,7 +4,6 @@
 #include "mysh_header.h"
 
 
-typedef int file_descriptor_t;
 
 
 //<foreign functions needed in the programme that for some reason are'nt mentioned in standard headers>
@@ -23,7 +22,6 @@ int shell_main(int argc, char **argv);
 
 
 #include "strings.h"
-
 #include "syntax_model.h"
 
 

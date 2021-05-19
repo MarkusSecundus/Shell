@@ -111,5 +111,24 @@
 
 
 
+#define REDIRECT_VARARGS(where, what)\
+    ({\
+        va_list _args__;\
+        va_start(_args__, what);\
+        AUTO(_ret__ =, where(what, _args__));\
+        va_end(_args__);\
+        _ret__;\
+    })
 
+#define REDIRECT_VARARGS_VOID(where, what)\
+    ({\
+        va_list _args__;\
+        va_start(_args__, what);\
+        where(what, _args__);\
+        va_end(_args__);\
+    })
+
+
+
+    
 #endif
