@@ -21,6 +21,8 @@
 
 #include "syntax_analyzer.tab.h"
 
+#include "envvars.h"
+
 
 
 //<global variables>
@@ -58,100 +60,6 @@ int is_filereading_mode(void)
 
 
 
-//<error-handled memory allocation>
-void *alloc_memory(size_t size)
-{
-    void *ret = malloc(size);
-    if (!ret)
-    {
-        errx(ENOMEM, "Unable to allocate %ld bytes - exiting!\n", size);
-    }
-    return ret;
-}
-
-void *realloc_memory(void *to_realloc, size_t new_size)
-{
-    void *ret = realloc(to_realloc, new_size);
-    if (!ret)
-    {
-        errx(ENOMEM, "Unable to realloc %p to %ld bytes - exiting!\n", to_realloc, new_size);
-    }
-    return ret;
-}
-
-void free_memory(void *to_free){
-    return free(to_free);
-}
-//</>
-
-
-
-
-
-
-//<strings>
-string_t str_copy(const char *to_copy)
-{
-    int len = strlen(to_copy);
-    string_t ret = {.len = len, .str = (char *)alloc_memory(sizeof(char) * (len + 1))};
-    memcpy(ret.str, to_copy, len + 1);
-    return ret;
-}
-
-static string_t raw_to_string(char *raw)
-{
-    return (string_t){.len = strlen(raw), .str = raw};
-}
-
-static string_t str_cpy(string_t to_copy)
-{
-    int len = to_copy.len;
-    string_t ret = {.len = len, .str = (char *)alloc_memory(sizeof(char) * (len + 1))};
-    memcpy(ret.str, to_copy.str, len + 1);
-    return ret;
-}
-
-static int str_equals(string_t a, string_t b)
-{
-    return a.len == b.len && !strcmp(a.str, b.str);
-}
-
-static string_t str_concat(string_t a, string_t b)
-{
-    int len = a.len + b.len;
-    char *ret = (char *)alloc_memory((len + 1) * sizeof(char));
-    memcpy(ret, a.str, a.len);
-    memcpy(ret + a.len, b.str, b.len);
-    ret[len] = '\0';
-    return (string_t){.len = len, .str = ret};
-}
-
-string_buffer_t make_string_buffer(int len)
-{
-    if (len < 16)
-        len = 16;
-    char *s = (char *)alloc_memory(len * sizeof(char));
-    *s = '\0';
-    return (string_buffer_t){.str = (string_t){.str = s, .len = 0}, .buffer_len = len};
-}
-
-void grow_buffer(string_buffer_t *buf, size_t len)
-{
-    buf->buffer_len += len;
-    buf->str.str = (char *)realloc_memory(buf->str.str, buf->buffer_len);
-}
-
-void append_char_to_buffer(string_buffer_t *buf, char c)
-{
-    if (buf->str.len >= buf->buffer_len - 2)
-    {
-        grow_buffer(buf, 32);
-    }
-    buf->str.str[buf->str.len++] = c;
-    buf->str.str[buf->str.len] = '\0';
-}
-
-//</>
 
 
 
@@ -160,102 +68,6 @@ void append_char_to_buffer(string_buffer_t *buf, char c)
 
 
 
-//<structures for representing commands in memory>
-
-
-void destroy_simple_command(simple_command_t com)
-{
-    free_memory(com.command_name.str);
-
-    {
-        str_list_t list = com.args_list;
-        while (list.length > 0)
-        {
-            free_memory(list.current->str.str);
-            list = xll_destroy(list);
-        }
-    }
-    {
-        redirect_list_t list = com.redirections;
-        while (list.length > 0)
-        {
-            free_memory(list.current->file_name.str);
-            list = xll_destroy(list);
-        }
-    }
-}
-
-
-
-simple_command_t make_empty_simple_command(){
-    return (simple_command_t){.command_name = NULL_STRING, .args_list = xll_empty(str_list_t), .redirections = xll_empty(redirect_list_t)};
-}
-
-static simple_command_t append_redirection_to_simple_command(simple_command_t self, string_t file_name, redirect_type_t redirect_type){
-    self.redirections = xll_add(self.redirections, {.file_name = file_name, .redirect_type = redirect_type});
-    return self;
-}
-
-static simple_command_t append_identifier_to_simple_command(simple_command_t self, string_t to_append){
-    if(self.command_name.str == NULL)
-    {
-        self.command_name = to_append;
-    }else
-    {
-        self.args_list = xll_add(self.args_list, {.str = to_append});
-    }
-    return self;
-}
-
-simple_command_t append_segment_to_simple_command(simple_command_t self, simple_command_segment_t to_append){
-    if(to_append.redirect == REDIRECT_NOREDIRECT){
-        return append_identifier_to_simple_command(self, to_append.identifier);
-    }else{
-        return append_redirection_to_simple_command(self, to_append.identifier, to_append.redirect);
-    }
-}
-
-command_t make_piped_command(simple_command_t first_segment){
-    return (command_t){.segments = xll_create(simple_command_list_node_t, {.value = first_segment})};
-}
-
-command_t append_to_piped_command(command_t self, simple_command_t to_append){
-    self.segments = xll_add(self.segments, {.value = to_append});
-    return self;
-}
-
-void destroy_piped_command(command_t self){
-    simple_command_list_t list = self.segments;
-    while(list.length > 0)
-    {
-        destroy_simple_command(list.current->value);
-        list = xll_destroy(list);
-    }
-}
-
-
-
-command_list_t make_command_list(command_t first)
-{
-    return xll_create(command_list_node_t, {.command = first});
-}
-
-command_list_t append_to_command_list(command_list_t list, command_t to_append)
-{
-    return xll_add(list, {.command = to_append});
-}
-
-command_list_t destroy_command_list(command_list_t list)
-{
-    while (list.length > 0)
-    {
-        destroy_piped_command(list.current->command);
-        list = xll_destroy(list);
-    }
-    return xll_empty(command_list_t);
-}
-
-//</>
 
 
 
@@ -263,48 +75,7 @@ command_list_t destroy_command_list(command_list_t list)
 
 
 
-//<manipulation of environment variables>
 
-
-char* get_current_dir(void){
-    char *ret = getcwd(NULL, 0);
-    if(ret)
-        return ret;
-    
-    string_buffer_t buf = make_string_buffer(32);
-    while(!(ret = getcwd(buf.str.str, buf.buffer_len)))
-        grow_buffer(&buf, 32);
-    return ret;
-}
-
-
-static string_t get_home_dir(void)
-{
-    char *ret = getenv("HOME");
-    if (!ret)
-        ret = getpwuid(getuid())->pw_dir;
-    return str_copy(ret);
-}
-
-static char *get_pwd(void)
-{
-    return getenv("PWD");
-}
-static char *get_oldpwd(void)
-{
-    return getenv("OLDPWD");
-}
-
-static int set_pwd(const char *value)
-{
-    return setenv("PWD", value, 1);
-}
-static int set_oldpwd(const char *value)
-{
-    return setenv("OLDPWD", value, 1);
-}
-
-//</>
 
 
 
@@ -649,13 +420,6 @@ static int exec_command_pipeline(command_t com){
             current_children_pids = xll_add(current_children_pids, {.value = id});
         }
     }
-
-    /*int id = fork();
-    if (id == 0)
-    {
-        turn_self_into_a_command(com);
-    }
-    current_child_pid = id;*/
 
 
     int ret = await_all_current_children();

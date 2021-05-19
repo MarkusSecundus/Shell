@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "errno.h": "c",
+        "pwd.h": "c",
+        "envvars.h": "c"
+    }
+}
