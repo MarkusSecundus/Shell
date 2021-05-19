@@ -91,7 +91,7 @@ XLL_TYPEDEF(pid_list_t, pid_list_node_t,
 
 static pid_list_t current_children_pids;
 
-static pid_t current_child_pid;
+//static pid_t current_child_pid;
 static command_list_t waiting_to_be_executed;
 
 //      <handling SIGINT interrupt>
@@ -227,7 +227,7 @@ int get_child_return_value(int stat_loc)
     }
     err(ENOTSUP, "Process terminated in unsupported way.\n");
 }
-
+/*
 static int await_current_child(void)
 {
 
@@ -243,7 +243,7 @@ static int await_current_child(void)
     current_child_pid = 0;
 
     return shell_ret_val;
-}
+}*/
 
 static int await_all_current_children(void){
     int ret = 0;
@@ -362,28 +362,43 @@ static int exec_general_command(simple_command_t com)
     {
         turn_self_into_a_command(com);
     }
-    current_child_pid = id;
-    int ret = await_current_child();
+    current_children_pids = xll_add(current_children_pids, {.value = id});
+    int ret = await_all_current_children();
     set_sigint_handler(&handler_when_idle);
     return ret;
 }
 
 
+static int(*recognize_builtin_command(string_t command_name))(simple_command_t, file_descriptor_t, file_descriptor_t){
+    if(command_name.str == NULL || !strcmp(":", command_name.str))
+    {
+        return nop_builtin;
+    }
+    else if (!strcmp("exit", command_name.str))
+    {
+        return exit_builtin;
+    }
+    else if (!strcmp("cd", command_name.str))
+    {
+        return cd_builtin;
+    }
+    return NULL;
+}
+
 static int exec_simple_command(simple_command_t com)
 {
-    if(com.command_name.str == NULL || !strcmp(":", com.command_name.str))
-    {
-        return exec_provided_builtin_command(com, nop_builtin);
-    }
-    else if (!strcmp("exit", com.command_name.str))
-    {
-        return exec_provided_builtin_command(com, exit_builtin);
-    }
-    else if (!strcmp("cd", com.command_name.str))
-    {
-        return exec_provided_builtin_command(com, cd_builtin);
-    }
-    return exec_general_command(com);
+    AUTO(builtin =, recognize_builtin_command(com.command_name));
+    return builtin
+        ? exec_provided_builtin_command(com, builtin)
+        : exec_general_command(com);
+}
+
+static int as_simple_command(simple_command_t com)
+{
+    AUTO(builtin =, recognize_builtin_command(com.command_name));
+    return builtin
+        ? exec_provided_builtin_command(com, builtin)
+        : (turn_self_into_a_command(com), 0);
 }
 
 
@@ -412,7 +427,7 @@ static int exec_command_pipeline(command_t com){
                 close(pd[1]);
                 close(pd[0]);
             }
-            exit(exec_simple_command(it->value));
+            exit(as_simple_command(it->value));
         }else{
             if(it != com.segments.last) close(pd[1]);
             if(last_pipe>= 0) close(last_pipe);
@@ -428,6 +443,8 @@ static int exec_command_pipeline(command_t com){
 }
 
 
+
+
 static int exec_command_list(command_list_t list)
 {
     waiting_to_be_executed = list;
@@ -441,6 +458,13 @@ static int exec_command_list(command_list_t list)
     }
     return shell_ret_val;
 }
+
+
+
+
+
+
+
 
 static char *get_prompt(void)
 {
@@ -459,6 +483,13 @@ static char *get_prompt(void)
 
     return value.str;
 }
+
+
+
+
+
+
+
 
 static int interactive_mode(void)
 {
