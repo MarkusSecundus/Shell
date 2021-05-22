@@ -1,6 +1,5 @@
-
-
 #include "mysh_main.h"
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
@@ -20,41 +19,16 @@
 
 
 #include "syntax_analyzer.tab.h"
-
 #include "envvars.h"
+#include "builtin_commands.h"
+#include "shell_parser_interop.h"
 
 
 
-//<global variables>
-static command_list_t parser_ret_val;
-static int shell_ret_val;
 
-void set_parser_ret_val(command_list_t value)
-{
-    parser_ret_val = value;
-}
 
-int set_shell_ret_val(int value)
-{
-    return shell_ret_val = value;
-}
-
-int line_count = 0;
-char *current_token = "(nil)";
-
-static int is_interactive_mode_flag = 0;
-static int is_filereading_mode_flag = 0;
-
-int is_interactive_mode(void)
-{
-    return is_interactive_mode_flag;
-}
-int is_filereading_mode(void)
-{
-    return is_filereading_mode_flag;
-}
-
-//</>
+extern int is_interactive_mode_flag;
+extern int is_filereading_mode_flag;
 
 
 
@@ -77,19 +51,15 @@ int is_filereading_mode(void)
 
 
 
-
-
-
-
-
-
-//<executing commands>
 
 XLL_TYPEDEF(pid_list_t, pid_list_node_t,
     pid_t value;
 );
 
 static pid_list_t current_children_pids = xll_empty(pid_list_t);
+
+
+
 
 //static pid_t current_child_pid;
 static command_list_t waiting_to_be_executed = xll_empty(command_list_t);
@@ -123,83 +93,7 @@ static void set_sigint_handler(const struct sigaction *handl)
     }
 }
 
-//      </>
 
-
-
-//      <builtin commands>
-
-typedef int (*builtin_command_t)(simple_command_t info, file_descriptor_t in, file_descriptor_t out);
-
-static int exit_builtin(simple_command_t info, file_descriptor_t in, file_descriptor_t out)
-{
-    (void)info;
-    (void)in;
-    (void)out;
-    exit(shell_ret_val);
-    return shell_ret_val;
-}
-
-static int nop_builtin(simple_command_t info, file_descriptor_t in, file_descriptor_t out)
-{
-    (void)info;
-    (void)in;
-    (void)out;
-    return 0;
-}
-
-
-static int cd_builtin(simple_command_t info, file_descriptor_t in, file_descriptor_t out)
-{
-    (void)in;
-    str_list_t args = info.args_list;
-
-    string_t path;
-    int reverting_to_oldpwd = 0;
-    switch (args.length)
-    {
-    case 0:
-        path = get_home_dir();
-        break;
-    case 1:
-        path = args.current->str;
-        if (str_equals(path, as_string("-")))
-        {
-            path = raw_to_string(get_oldpwd());
-            if(path.str == NULL)
-                warnx("cd: OLDPWD not set");
-            reverting_to_oldpwd = 1;
-        }
-        path = str_cpy(path);
-        break;
-    default:
-        warnx("cd: too many arguments");
-        return EINVAL;
-    }
-
-    string_t new_oldpwd = str_copy(get_pwd());
-
-    if (path.str && chdir(path.str) != 0)
-    {
-        warn("cd: `%s`", path.str);
-        free_memory(path.str);
-        free_memory(new_oldpwd.str);
-        return ENOENT;
-    }
-    if (reverting_to_oldpwd)
-        dprintf(out, "%s\n", path.str);
-
-    char *real_curr_pwd = get_current_dir();
-
-    set_oldpwd(new_oldpwd.str);
-    set_pwd(real_curr_pwd);
-
-    free_memory(real_curr_pwd);
-    free_memory(path.str);
-    free_memory(new_oldpwd.str);
-    return 0;
-}
-//      </>
 
 
 
@@ -350,25 +244,10 @@ static int exec_general_command(simple_command_t com)
 }
 
 
-static builtin_command_t recognize_builtin_command(string_t command_name){
-    if(command_name.str == NULL || !strcmp(":", command_name.str))
-    {
-        return nop_builtin;
-    }
-    else if (!strcmp("exit", command_name.str))
-    {
-        return exit_builtin;
-    }
-    else if (!strcmp("cd", command_name.str))
-    {
-        return cd_builtin;
-    }
-    return NULL;
-}
 
 static int exec_simple_command(simple_command_t com)
 {
-    builtin_command_t builtin = recognize_builtin_command(com.command_name);
+    builtin_command_t builtin = recognize_builtin_command(com);
     return builtin
         ? exec_provided_builtin_command(com, builtin)
         : exec_general_command(com);
@@ -376,7 +255,7 @@ static int exec_simple_command(simple_command_t com)
 
 static int as_simple_command(simple_command_t com)
 {
-    builtin_command_t builtin = recognize_builtin_command(com.command_name);
+    builtin_command_t builtin = recognize_builtin_command(com);
     return builtin
         ? exec_provided_builtin_command(com, builtin)
         : (turn_self_into_a_command(com), 0);
@@ -435,7 +314,7 @@ static int exec_command_list(command_list_t list)
     {
         command_t first = waiting_to_be_executed.current->command;
         waiting_to_be_executed = xll_destroy(waiting_to_be_executed);
-        set_shell_ret_val(exec_command_pipeline(first)); 
+        shell_ret_val = exec_command_pipeline(first); 
         destroy_piped_command(first);
     }
     return shell_ret_val;
@@ -509,7 +388,7 @@ static int file_mode(char *path)
     if (f == NULL)
     {
         warn("Can't open '%s'", path);
-        return set_shell_ret_val(ENOENT);
+        return shell_ret_val = ENOENT;
     }
 
     line_count = 1;
@@ -529,7 +408,7 @@ static int noninteractive_mode(int argc, char **argv)
         if (argc <= 2)
         {
             warnx("-c requires an argument");
-            return set_shell_ret_val(EINVAL);
+            return shell_ret_val = EINVAL;
         }
         return string_mode(argv[1]);
     }
@@ -545,7 +424,7 @@ static int init_envvars(void)
     setenv("OLDPWD", DEFAULT_PWD_IF_NONE, 0);
     free_memory(wd);
     chdir(get_pwd());
-    return set_shell_ret_val(0);
+    return shell_ret_val = 0;
 }
 
 

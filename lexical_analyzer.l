@@ -6,13 +6,11 @@
 
     string_buffer_t buffer;
 
-    #define ret_IDENTIFIER(text) { yylval.string = (text); current_token = yylval.string.str; buffer = string_buffer_empty; return IDENTIFIER; }
+    #define ret_IDENTIFIER(text) { yylval.string = (text); current_token = yylval.string.str; buffer = EMPTY_STRING_BUFFER; return IDENTIFIER; }
     #define ret_SEMIC { current_token = ";";return SEMIC; }
     #define ret_NEWL { ++line_count; current_token="\\n"; return NEWL; }
     #define ret_PIPE { current_token = "|"; return PIPE; }
-    #define ret_REDIRIN { yylval.redirect_type = REDIRECT_STDIN; current_token = "<"; return REDIR; }
-    #define ret_REDIROUT { yylval.redirect_type = REDIRECT_STDOUT; current_token = ">"; return REDIR; }
-    #define ret_REDIROUTA { yylval.redirect_type = REDIRECT_STDOUT_APPEND; current_token = ">>"; return REDIR; }
+    #define ret_REDIR(type) { yylval.redirect_type = type; current_token = yytext; return REDIR; }
 %}
 
 %option noyywrap nounput noinput
@@ -36,9 +34,9 @@ IDENTIFIER_CHAR (!|([$-~]{-}[;'><]))
 
 ";" { ret_SEMIC; }
 "|" { ret_PIPE; }
-"<" { ret_REDIRIN; }
-">" { ret_REDIROUT; }
-">>" { ret_REDIROUTA; }
+"<" { ret_REDIR(REDIRECT_STDIN); }
+">" { ret_REDIR(REDIRECT_STDOUT); }
+">>" { ret_REDIR(REDIRECT_STDOUT_APPEND); }
 
 {IDENTIFIER_CHAR}+ { ret_IDENTIFIER( str_copy(yytext)); }
 
@@ -108,5 +106,5 @@ void flex_cleanup(void)
 {
     BEGIN(INITIAL);
     free(buffer.str.str);
-    buffer = string_buffer_empty;
+    buffer = EMPTY_STRING_BUFFER;
 }

@@ -17,7 +17,7 @@
 
 %%
 
-unit: multiline_command_list__opt { $$ = $1; set_parser_ret_val($$); }
+unit: multiline_command_list__opt { $$ = $1; parser_ret_val = $$; }
     ;
 
 multiline_command_list__opt: %empty { $$ = xll_empty(command_list_t); }
@@ -70,7 +70,7 @@ int main(int argc, char **argv){
 
 
 int yyerror(char *m){
-    set_shell_ret_val(SYNTAX_ERROR_RET_VAL);
+    shell_ret_val = SYNTAX_ERROR_RET_VAL;
     
     if(is_filereading_mode())
         warnx("'%s'... on line %d near token '%s'", m, line_count, current_token);

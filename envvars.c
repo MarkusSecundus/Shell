@@ -16,7 +16,7 @@ char* get_current_dir(void)
     
     string_buffer_t buf = make_string_buffer(32);
     while(!(ret = getcwd(buf.str.str, buf.buffer_len)))
-        grow_buffer(&buf, 32);
+        grow_string_buffer(&buf, 32);
     return ret;
 }
 

@@ -1,7 +1,6 @@
 #include "strings.h"
 
 
-//<strings>
 string_t str_copy(const char *to_copy)
 {
     int len = strlen(to_copy);
@@ -48,9 +47,9 @@ string_buffer_t make_string_buffer(int len)
     return (string_buffer_t){.str = (string_t){.str = s, .len = 0}, .buffer_len = len};
 }
 
-void grow_buffer(string_buffer_t *buf, size_t len)
+void grow_string_buffer(string_buffer_t *buf, size_t additional_length)
 {
-    buf->buffer_len += len;
+    buf->buffer_len += additional_length;
     buf->str.str = (char *)realloc_memory(buf->str.str, buf->buffer_len);
 }
 
@@ -58,10 +57,8 @@ void append_char_to_buffer(string_buffer_t *buf, char c)
 {
     if (buf->str.len >= buf->buffer_len - 2)
     {
-        grow_buffer(buf, 32);
+        grow_string_buffer(buf, 32);
     }
     buf->str.str[buf->str.len++] = c;
     buf->str.str[buf->str.len] = '\0';
 }
-
-//</>
