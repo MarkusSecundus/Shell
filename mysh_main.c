@@ -17,7 +17,6 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
-
 #include "syntax_analyzer.tab.h"
 #include "envvars.h"
 #include "builtin_commands.h"
@@ -26,30 +25,8 @@
 
 
 
-
 extern int is_interactive_mode_flag;
 extern int is_filereading_mode_flag;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 XLL_TYPEDEF(pid_list_t, pid_list_node_t,
@@ -58,11 +35,10 @@ XLL_TYPEDEF(pid_list_t, pid_list_node_t,
 
 static pid_list_t current_children_pids = xll_empty(pid_list_t);
 
-
-
-
 //static pid_t current_child_pid;
 static command_list_t waiting_to_be_executed = xll_empty(command_list_t);
+
+
 
 //      <handling SIGINT interrupt>
 static void sigint_handler_fnc(int t)
@@ -101,6 +77,7 @@ static void set_sigint_handler(const struct sigaction *handl)
 
 
 
+
 int get_child_return_value(int stat_loc)
 {
     if (WIFEXITED(stat_loc))
@@ -122,13 +99,15 @@ int get_child_return_value(int stat_loc)
     err(ENOTSUP, "Process terminated in unsupported way.\n");
 }
 
-
-static int await_all_current_children(void){
+static int await_all_current_children(void)
+{
     int ret = 0;
 
-    while(current_children_pids.length > 0){
+    while (current_children_pids.length > 0)
+    {
         int stat_loc;
-        if(waitpid(current_children_pids.current->value, &stat_loc, 0) != -1){
+        if (waitpid(current_children_pids.current->value, &stat_loc, 0) != -1)
+        {
             ret = get_child_return_value(stat_loc);
         }
         current_children_pids = xll_destroy(current_children_pids);
@@ -136,7 +115,6 @@ static int await_all_current_children(void){
 
     return ret;
 }
-
 
 char **make_command_arglist(simple_command_t com)
 {
@@ -149,27 +127,27 @@ char **make_command_arglist(simple_command_t com)
     return ret;
 }
 
-
-static struct{file_descriptor_t input, output; int success;} load_file_descriptors(redirect_list_t redirects, void(*report)(int errnum, const char* format, ...)){
+static struct{file_descriptor_t input, output;int success;} load_file_descriptors(redirect_list_t redirects, void (*report)(int errnum, const char *format, ...))
+{
     __typeof__(load_file_descriptors(redirects, report)) ret;
     ret.input = -1;
     ret.output = -1;
     ret.success = 1;
 
     file_descriptor_t *filedes_writers[] = {&ret.input, &ret.output, &ret.output};
-    int flags[] = {O_RDONLY, O_WRONLY | O_CREAT, O_WRONLY | O_CREAT | O_APPEND };
+    int flags[] = {O_RDONLY, O_WRONLY | O_CREAT, O_WRONLY | O_CREAT | O_APPEND};
 
     xll_foreach(it, redirects)
     {
-        if(it->redirect_type >= REDIRECT_STDIN && it->redirect_type <= REDIRECT_STDOUT_APPEND)
+        if (it->redirect_type >= REDIRECT_STDIN && it->redirect_type <= REDIRECT_STDOUT_APPEND)
         {
             file_descriptor_t *filedes = filedes_writers[it->redirect_type];
             int flag = flags[it->redirect_type];
             int mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
 
-            if(*filedes >= 0) 
+            if (*filedes >= 0)
                 close(*filedes);
-            if( (*filedes = open(it->file_name.str, flag, mode)) < 0)
+            if ((*filedes = open(it->file_name.str, flag, mode)) < 0)
             {
                 report(errno, "Cannot open file '%s'", it->file_name.str);
                 ret.success = 0;
@@ -181,51 +159,63 @@ static struct{file_descriptor_t input, output; int success;} load_file_descripto
     return ret;
 }
 
-static void set_file_redirections(redirect_list_t redirects){
+
+static void set_file_redirections(redirect_list_t redirects)
+{
     AUTO(redirs =, load_file_descriptors(redirects, err));
 
-    if(redirs.input >= 0){
+    if (redirs.input >= 0)
+    {
         dup2(redirs.input, STDIN_FILENO);
         close(redirs.input);
     }
-    if(redirs.output >= 0){
+    if (redirs.output >= 0)
+    {
         dup2(redirs.output, STDOUT_FILENO);
         close(redirs.output);
     }
 }
 
-static void turn_self_into_a_command(simple_command_t com){
-        set_file_redirections(com.redirections);
-        char **arglist = make_command_arglist(com);
+static void turn_self_into_a_command(simple_command_t com)
+{
+    set_file_redirections(com.redirections);
+    char **arglist = make_command_arglist(com);
 
-        execvp(com.command_name.str, arglist);
-        
-        err(UNKNOWN_COMMAND_RET_VAL, "Unable to exec command '%s'", com.command_name.str);
+    execvp(com.command_name.str, arglist);
+
+    err(UNKNOWN_COMMAND_RET_VAL, "Unable to exec command '%s'", com.command_name.str);
 }
 
-static void warn_with_ignored_first_arg(int errnum, const char* format, ...){
+static void warn_with_ignored_first_arg(int errnum, const char *format, ...)
+{
     (void)errnum;
     REDIRECT_VARARGS_VOID(vwarn, format);
 }
-static int exec_provided_builtin_command(simple_command_t com, int (*impl)(simple_command_t info, file_descriptor_t in, file_descriptor_t out)){
+static int exec_provided_builtin_command(simple_command_t com, int (*impl)(simple_command_t info, file_descriptor_t in, file_descriptor_t out))
+{
 
     int ret;
     AUTO(redirs =, load_file_descriptors(com.redirections, warn_with_ignored_first_arg));
-    
 
-    if(redirs.success){
+    if (redirs.success)
+    {
         AUTO(redr =, redirs);
-        if(redr.input < 0) redr.input = STDIN_FILENO;
-        if(redr.output < 0) redr.output = STDOUT_FILENO;
+        if (redr.input < 0)
+            redr.input = STDIN_FILENO;
+        if (redr.output < 0)
+            redr.output = STDOUT_FILENO;
         ret = impl(com, redr.input, redr.output);
     }
-    else{
+    else
+    {
         ret = errno;
     }
 
-    if(redirs.input >= 0) close(redirs.input);
-    if(redirs.output >= 0) close(redirs.output);
- 
+    if (redirs.input >= 0)
+        close(redirs.input);
+    if (redirs.output >= 0)
+        close(redirs.output);
+
     return ret;
 }
 
@@ -243,68 +233,70 @@ static int exec_general_command(simple_command_t com)
     return ret;
 }
 
-
-
 static int exec_simple_command(simple_command_t com)
 {
     builtin_command_t builtin = recognize_builtin_command(com);
     return builtin
-        ? exec_provided_builtin_command(com, builtin)
-        : exec_general_command(com);
+               ? exec_provided_builtin_command(com, builtin)
+               : exec_general_command(com);
 }
 
 static int as_simple_command(simple_command_t com)
 {
     builtin_command_t builtin = recognize_builtin_command(com);
     return builtin
-        ? exec_provided_builtin_command(com, builtin)
-        : (turn_self_into_a_command(com), 0);
+               ? exec_provided_builtin_command(com, builtin)
+               : (turn_self_into_a_command(com), 0);
 }
 
-
-static int exec_command_pipeline(command_t com){
-    if(com.segments.length == 1)
+static int exec_command_pipeline(command_t com)
+{
+    if (com.segments.length == 1)
         return exec_simple_command(com.segments.current->value);
 
     int pd[2], last_pipe = -1;
 
     set_sigint_handler(&handler_when_child_running);
 
-    xll_foreach(it, com.segments){
-        if( it != com.segments.last && pipe(pd) < 0 ){
+    xll_foreach(it, com.segments)
+    {
+        if (it != com.segments.last && pipe(pd) < 0)
+        {
             warn("Failed to create pipe!");
             break;
         }
 
         int id = fork();
-        if(id == 0){
-            if(last_pipe >= 0){
+        if (id == 0)
+        {
+            if (last_pipe >= 0)
+            {
                 dup2(last_pipe, STDIN_FILENO);
                 close(last_pipe);
             }
-            if(it != com.segments.last){
+            if (it != com.segments.last)
+            {
                 dup2(pd[1], STDOUT_FILENO);
                 close(pd[1]);
                 close(pd[0]);
             }
             exit(as_simple_command(it->value));
-        }else{
-            if(it != com.segments.last) close(pd[1]);
-            if(last_pipe>= 0) close(last_pipe);
+        }
+        else
+        {
+            if (it != com.segments.last)
+                close(pd[1]);
+            if (last_pipe >= 0)
+                close(last_pipe);
             last_pipe = pd[0];
             current_children_pids = xll_add(current_children_pids, {.value = id});
         }
     }
 
-
     int ret = await_all_current_children();
     set_sigint_handler(&handler_when_idle);
     return ret;
 }
-
-
-
-
 
 static int exec_command_list(command_list_t list)
 {
@@ -314,15 +306,11 @@ static int exec_command_list(command_list_t list)
     {
         command_t first = waiting_to_be_executed.current->command;
         waiting_to_be_executed = xll_destroy(waiting_to_be_executed);
-        shell_ret_val = exec_command_pipeline(first); 
+        shell_ret_val = exec_command_pipeline(first);
         destroy_piped_command(first);
     }
     return shell_ret_val;
 }
-
-
-
-
 
 
 
@@ -344,10 +332,6 @@ static char *get_prompt(void)
 
     return value.str;
 }
-
-
-
-
 
 
 
@@ -427,15 +411,7 @@ static int init_envvars(void)
     return shell_ret_val = 0;
 }
 
-
 //</>
-
-
-
-
-
-
-
 
 static int init(void)
 {

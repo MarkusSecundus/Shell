@@ -1,32 +1,32 @@
 #ifndef _STRINGS__GUARD___dhnskadfhlahflkjajhdlksjakljfdnslkjhdflieshfglkjdsnjdlkasjldkasjl
 #define _STRINGS__GUARD___dhnskadfhlahflkjajhdlksjakljfdnslkjhdflieshfglkjdsnjdlkasjldkasjl
 
-
 #include "mysh_header.h"
+
 
 
 /**
  * Wrapper arround C-string that remembers its length
 */
-typedef struct{
+typedef struct
+{
     char *str;
     size_t len;
 } string_t;
 
+#define NULL_STRING ((string_t){.len = 0, .str = NULL})
 
-#define NULL_STRING ((string_t){.len=0, .str=NULL})
 
 /**
  * Converts char[] literal to string_t literal
 */
-#define as_string(lit) ( (string_t){.str = (lit), .len = (sizeof(lit) - 1)} )
-
-
+#define as_string(lit) ((string_t){.str = (lit), .len = (sizeof(lit) - 1)})
 
 /**
  * Dynamically grown buffer for creating a long string by parts.
 */
-typedef struct{
+typedef struct
+{
     string_t str;
     size_t buffer_len;
 } string_buffer_t;
@@ -39,7 +39,7 @@ string_t str_copy(const char *to_copy);
 /**
  * Literal representing a buffer of zero size that can be grown or appended to. 
 */
-#define EMPTY_STRING_BUFFER ( (string_buffer_t){.buffer_len = 0, .str = (string_t){.len = 0, .str = NULL}} )
+#define EMPTY_STRING_BUFFER ((string_buffer_t){.buffer_len = 0, .str = (string_t){.len = 0, .str = NULL}})
 
 /**
  * Creates a buffer of specified initial length

@@ -7,9 +7,10 @@
 
 
 
-builtin_command_t recognize_builtin_command(simple_command_t com){
+builtin_command_t recognize_builtin_command(simple_command_t com)
+{
     string_t command_name = com.command_name;
-    if(command_name.str == NULL || !strcmp(":", command_name.str))
+    if (command_name.str == NULL || !strcmp(":", command_name.str))
     {
         return nop_builtin;
     }
@@ -23,8 +24,6 @@ builtin_command_t recognize_builtin_command(simple_command_t com){
     }
     return NULL;
 }
-
-
 
 
 
@@ -45,7 +44,6 @@ int nop_builtin(simple_command_t info, file_descriptor_t in, file_descriptor_t o
     return 0;
 }
 
-
 int cd_builtin(simple_command_t info, file_descriptor_t in, file_descriptor_t out)
 {
     (void)in;
@@ -63,7 +61,7 @@ int cd_builtin(simple_command_t info, file_descriptor_t in, file_descriptor_t ou
         if (str_equals(path, as_string("-")))
         {
             path = raw_to_string(get_oldpwd());
-            if(path.str == NULL)
+            if (path.str == NULL)
                 warnx("cd: OLDPWD not set");
             reverting_to_oldpwd = 1;
         }

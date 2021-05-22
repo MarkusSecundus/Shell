@@ -1,9 +1,20 @@
 #ifndef _SHELL_PARSER_INTERFACE__guard___fhdskohfoksjfklsdjlkfjdslkfjsdlkjflds
 #define _SHELL_PARSER_INTERFACE__guard___fhdskohfoksjfklsdjlkfjdslkfjsdlkjflds
 
-
 #include "mysh_header.h"
 #include "syntax_model.h"
+
+
+
+//<foreign functions needed by flex&bison that for some reason are'nt mentioned in standard headers>
+int yylex(void);
+int yyerror(char *m);
+int fileno(FILE *);
+//</>
+
+
+
+
 
 /**
  * Value to be set to shell_ret_val by parser on encountering a syntax error
@@ -31,7 +42,6 @@ extern int line_count;
 */
 extern char *current_token;
 
-
 /**
  * True or False whether the shell is currently running in the interactive mode.
  * For modifying the flag declare explicitly `extern int is_interactive_mode_flag;`
@@ -43,13 +53,10 @@ int is_interactive_mode(void);
 */
 int is_filereading_mode(void);
 
-
-
 //sets provided string as input for flex and parses its contents by bison - returns the value returned by yyparse
 int scan_string(const char *to_scan);
 
 //sets provided file as flex input and parses its contents by bison - returns the value returned by yyparse
 int scan_file(FILE *file);
-
 
 #endif

@@ -2,11 +2,11 @@
 #define _BUILTIN_COMMANDS__guard___fjaokfhsohjfasokhjfdslkhjfloksajflksajdl
 
 #include "mysh_header.h"
-#include<unistd.h>
-#include<err.h>
-
+#include <unistd.h>
+#include <err.h>
 
 #include "syntax_model.h"
+
 
 /**
  * Interface that all builtin commands must implement.
@@ -23,7 +23,6 @@ typedef int (*builtin_command_t)(simple_command_t info, file_descriptor_t in, fi
  * Returns NULL otherwise
 */
 builtin_command_t recognize_builtin_command(simple_command_t com);
-
 
 /**
  * Exits current process with shell_ret_val as return value

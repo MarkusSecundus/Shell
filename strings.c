@@ -1,6 +1,7 @@
 #include "strings.h"
 
 
+
 string_t str_copy(const char *to_copy)
 {
     int len = strlen(to_copy);
@@ -8,7 +9,6 @@ string_t str_copy(const char *to_copy)
     memcpy(ret.str, to_copy, len + 1);
     return ret;
 }
-
 
 string_t raw_to_string(char *raw)
 {

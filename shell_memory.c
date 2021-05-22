@@ -3,8 +3,6 @@
 #include <err.h>
 #include <errno.h>
 
-
-//<error-handled memory allocation>
 void *alloc_memory(size_t size)
 {
     void *ret = malloc(size);
@@ -25,7 +23,7 @@ void *realloc_memory(void *to_realloc, size_t new_size)
     return ret;
 }
 
-void free_memory(void *to_free){
+void free_memory(void *to_free)
+{
     return free(to_free);
 }
-//</>

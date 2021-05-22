@@ -1,27 +1,28 @@
 #ifndef _SYNTAX_MODEL__GUARD___hfsjiuhfojdshjlfjkdshkljfhkjsfjioshfiusdnkjjhoiuahfjkdshfkjdshbfgkjslju
 #define _SYNTAX_MODEL__GUARD___hfsjiuhfojdshjlfjkdshkljfhkjsfjioshfiusdnkjjhoiuahfjkdshfkjdshbfgkjslju
 
-
-
 #include "mysh_header.h"
 #include "strings.h"
 
-
-typedef enum{
-    REDIRECT_NOREDIRECT = -1, REDIRECT_STDIN = 0, REDIRECT_STDOUT, REDIRECT_STDOUT_APPEND
-}  redirect_type_t;
+typedef enum
+{
+    REDIRECT_NOREDIRECT = -1,
+    REDIRECT_STDIN = 0,
+    REDIRECT_STDOUT,
+    REDIRECT_STDOUT_APPEND
+} redirect_type_t;
 
 
 XLL_TYPEDEF(redirect_list_t, redirect_list_node_t,
-    string_t file_name;
-    redirect_type_t redirect_type;
+        string_t file_name;
+        redirect_type_t redirect_type;
 );
-
 
 /**
  * Struct representing a simple command that has a name, arguments and a list of redirections.
 */
-typedef struct{
+typedef struct
+{
     string_t command_name;
     str_list_t args_list;
     redirect_list_t redirections;
@@ -38,15 +39,14 @@ void destroy_simple_command(simple_command_t com);
 */
 simple_command_t make_empty_simple_command();
 
-
 /**
  * A syntactic segment of a simple command. Can be either a redirection or an argument/command name
 */
-typedef struct{
+typedef struct
+{
     string_t identifier;
     redirect_type_t redirect;
 } simple_command_segment_t;
-
 
 /**
  * Appends provided segment to the simple command.
@@ -63,7 +63,8 @@ XLL_TYPEDEF(simple_command_list_t, simple_command_list_node_t,
 /**
  * Command pipeline. Consists of multiple simple_commands to be run in parallel and connected together with pipes.
 */
-typedef struct{
+typedef struct
+{
     simple_command_list_t segments;
 } command_t;
 
@@ -81,7 +82,6 @@ command_t make_piped_command(simple_command_t first_segment);
  * Appends provided simple_command at the end of the pipeline
 */
 command_t append_to_piped_command(command_t self, simple_command_t to_append);
-
 
 /**
  * Linked list of command pipelines.
@@ -104,15 +104,5 @@ command_list_t make_command_list(command_t first);
  * Allocates node for the provided command and appends it to the specified list
 */
 command_list_t append_to_command_list(command_list_t list, command_t to_append);
-
-
-
-
-
-
-
-
-
-
 
 #endif

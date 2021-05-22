@@ -9,13 +9,6 @@
 
 
 
-//<foreign functions needed by flex&bison that for some reason are'nt mentioned in standard headers>
-int yylex(void);
-int yyerror(char *m);
-int fileno(FILE *);
-//</>
-
-
 
 
 /**
@@ -39,18 +32,17 @@ int fileno(FILE *);
 */
 #define RET_VAL_OFFSET_WHEN_KILLED_BY_SIGNAL 128
 
-
 /**
  * The main function of the shell
  * */
 int shell_main(int argc, char **argv);
 
 
-
 /**
  * Type of flex&bison tokens
 */
-typedef union{
+typedef union
+{
     string_t string;
     simple_command_segment_t simple_command_segment;
     simple_command_t simple_command;
@@ -60,11 +52,5 @@ typedef union{
 } token_t;
 
 #define YYSTYPE token_t //set token_t as token type for flex&bison
-
-
-
-
-
-
 
 #endif
