@@ -20,14 +20,33 @@
 
 
 
+#ifdef __clang__
+#define LAMBDA_DECLARE(ret_t, name, ...) ret_t (^name) __VA_ARGS__;
+#else
+#define LAMBDA_DECLARE(ret_t, name, ...) ret_t (*name) __VA_ARGS__;
+#endif
+
+
+
+#ifdef __clang__
+#define LAMBDA(ret_t, ...) (^ret_t __VA_ARGS__)
+#else
+#define LAMBDA(ret_t, ...) \
+    ({\
+        ret_t __lambda___ __VA_ARGS__;\
+        __lambda___;\
+    })
+#endif
+
+
 /**
  * Uplatní funkci nebo makro danou 0. argumentem na všechny předané prvky. 
  * 
  * Všechny předané prvky musí být stejného typu, který je specifikovaný 1. argumentem,
  * vnitřní funkci, která přes ně iteruje, budou předány hodnotou.
 **/
-#define VA_ARGS_APPLY_TO_ALL(what, type, ...) ({\
-    inline void __MACRO_MAGIC__applier_function___(int __MACRO_MAGIC__applier_function___remaining_count___, ...){\
+#define VA_ARGS_APPLY_TO_ALL(what, type, ...) (\
+    LAMBDA(void, (int __MACRO_MAGIC__applier_function___remaining_count___, ...){\
         va_list __MACRO_MAGIC__applier_function___va_args___;\
         \
         va_start(__MACRO_MAGIC__applier_function___va_args___, __MACRO_MAGIC__applier_function___remaining_count___);\
@@ -36,9 +55,9 @@
             what(va_arg(__MACRO_MAGIC__applier_function___va_args___, type));\
         }\
         va_end(__MACRO_MAGIC__applier_function___va_args___);\
-    };\
-    __MACRO_MAGIC__applier_function___(VA_ARGS_COUNT(type, __VA_ARGS__), __VA_ARGS__);\
-})
+    })\
+    (VA_ARGS_COUNT(type, __VA_ARGS__), __VA_ARGS__)\
+)
 
 
 
@@ -48,8 +67,8 @@
  * Všechny předané prvky musí být stejného typu, který je specifikovaný 2. argumentem,
  * vnitřní funkci, která přes ně iteruje, budou předány hodnotou.
 **/
-#define VA_ARGS_FOLD_LEFT(applier, result_t, args_t, accumulator_init, ...) ({\
-    inline result_t __MACRO_MAGIC__foldl_function___(result_t __MACRO_MAGIC__foldl_function___accumulator___, int __MACRO_MAGIC__foldl_function___remaining_count___, ...){\
+#define VA_ARGS_FOLD_LEFT(applier, result_t, args_t, accumulator_init, ...) (\
+    LAMBDA(result_t, (result_t __MACRO_MAGIC__foldl_function___accumulator___, int __MACRO_MAGIC__foldl_function___remaining_count___, ...){\
         va_list __MACRO_MAGIC__foldl_function___va_args___;\
         \
         va_start(__MACRO_MAGIC__foldl_function___va_args___, __MACRO_MAGIC__foldl_function___remaining_count___);\
@@ -59,9 +78,9 @@
         }\
         va_end(__MACRO_MAGIC__foldl_function___va_args___);\
         return __MACRO_MAGIC__foldl_function___accumulator___;\
-    };\
-    __MACRO_MAGIC__foldl_function___((accumulator_init), VA_ARGS_COUNT(args_t, __VA_ARGS__), __VA_ARGS__);\
-})
+    })\
+    ((accumulator_init), VA_ARGS_COUNT(args_t, __VA_ARGS__), __VA_ARGS__)\
+)
 
 #define VA_ARGS_FOLD_LEFT_IMPLICIT_TYPE(applier, first, second, ...) VA_ARGS_FOLD_LEFT(applier, __typeof__(first), __typeof__(second), first, second, __VA_ARGS__)
 
@@ -77,15 +96,6 @@
 
 
 
-/**
- * Nadeklaruje novou proměnnou s daným jménem, inicializovanou daným výrazem, jejíž typ je odvozen z typu onoho výrazu
- * 
- * Aby to v kódu vypadalo názorněji, napsání přiřadítka za jménem proměnné ponecháváme na volajícím -> používá se stylem:
- *  AUTO(my_variable =, get_some_value(..) );
- * 
- * Nefunguje 
-**/
-#define AUTO(name_and_assignment_op, ...) __typeof__(__VA_ARGS__) name_and_assignment_op (__VA_ARGS__)
 
 
 
@@ -101,13 +111,6 @@
         (type*)((void*)__mptr - ELEMENT_OFFSET_OF(type, member)); \
     })
 
-
-
-#define LAMBDA(ret_t, ...) \
-    ({\
-        ret_t __lambda___ __VA_ARGS__;\
-        __lambda___;\
-    })
 
 
 
