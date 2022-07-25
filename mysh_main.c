@@ -162,7 +162,7 @@ static struct{file_descriptor_t input, output;int success;} load_file_descriptor
 
 static void set_file_redirections(redirect_list_t redirects)
 {
-    AUTO(redirs =, load_file_descriptors(redirects, err));
+    __auto_type redirs = load_file_descriptors(redirects, err);
 
     if (redirs.input >= 0)
     {
@@ -195,11 +195,11 @@ static int exec_provided_builtin_command(simple_command_t com, int (*impl)(simpl
 {
 
     int ret;
-    AUTO(redirs =, load_file_descriptors(com.redirections, warn_with_ignored_first_arg));
+    __auto_type redirs = load_file_descriptors(com.redirections, warn_with_ignored_first_arg);
 
     if (redirs.success)
     {
-        AUTO(redr =, redirs);
+        __auto_type redr = redirs;
         if (redr.input < 0)
             redr.input = STDIN_FILENO;
         if (redr.output < 0)
