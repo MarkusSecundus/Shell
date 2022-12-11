@@ -86,11 +86,11 @@ typedef struct xor_linked_list_handl{
  * Normal user should just define the node type through XLL_TYPEDEF instead.
 **/
 #define XLL_EMBED(name_of_handle_type)\
-union{\
+struct{\
     xor_linked_list_t Impl;\
     union {\
         name_of_handle_type * handl_t;\
-    } _typeinfo__;\
+    } _typeinfo__[];\
 } XLL_EMBED_NAME_CONVENTION
 
 
@@ -151,7 +151,7 @@ union{\
 
 
 /**Gets the appropriate handle type for the specified xor list node type.*/
-#define _XLL_get_handl_type(list_type) __typeof__( *( ((list_type*)0)->XLL_EMBED_NAME_CONVENTION._typeinfo__.handl_t)  )
+#define _XLL_get_handl_type(list_type) __typeof__( *( ((list_type*)0)->XLL_EMBED_NAME_CONVENTION._typeinfo__[0].handl_t)  )
 
 /**Gets the appropriate node type pointed to by the specified xor list handle type.*/
 #define _XLL_get_list_type(handl_type) __typeof__(  *(((handl_type*)0)->current)   )
